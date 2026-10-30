@@ -36,12 +36,11 @@ const AuthContext = createContext<AuthContextValue>({
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AdminUser | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
   const lastActivityRef = useRef<number>(Date.now());
   const lastServerCheckRef = useRef<number>(Date.now());
   const signingOutRef = useRef<boolean>(false);
   const userRef = useRef<AdminUser | null>(null);
-  userRef.current = user;
 
   const handleSetUser = useCallback((newUser: AdminUser | null) => {
     setUser(newUser);
@@ -50,10 +49,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signingOutRef.current = false;
       lastActivityRef.current = Date.now();
       lastServerCheckRef.current = Date.now();
-      localStorage.setItem('cms_admin_last_activity', String(Date.now()));
+      try {
+        localStorage.setItem('cms_admin_user', JSON.stringify(newUser));
+        localStorage.setItem('cms_admin_last_activity', String(Date.now()));
+      } catch {}
     } else {
-      localStorage.removeItem('cms_admin_user');
-      localStorage.removeItem('cms_admin_last_activity');
+      try {
+        localStorage.removeItem('cms_admin_user');
+        localStorage.removeItem('cms_admin_last_activity');
+      } catch {}
     }
   }, []);
 
@@ -90,6 +94,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
+    // Fast local restore on client mount for instant render
+    try {
+      const stored = localStorage.getItem('cms_admin_user');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && parsed.email) {
+          setUser(parsed);
+          userRef.current = parsed;
+          setLoading(false);
+        }
+      }
+    } catch {}
+
     async function initAuth() {
       try {
         // Always verify against server session endpoint
@@ -101,7 +118,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               setUser(data.user);
               userRef.current = data.user;
               lastActivityRef.current = Date.now();
-              localStorage.setItem('cms_admin_last_activity', String(Date.now()));
+              try {
+                localStorage.setItem('cms_admin_user', JSON.stringify(data.user));
+                localStorage.setItem('cms_admin_last_activity', String(Date.now()));
+              } catch {}
             } else {
               // Server restarted or session expired
               handleSetUser(null);

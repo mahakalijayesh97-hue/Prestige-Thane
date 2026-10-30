@@ -45,9 +45,12 @@ async function syncFromSupabase() {
 export async function GET() {
   try {
     await connectToDatabase();
-    await syncFromSupabase();
 
-    const list = await PageModel.find({}).sort({ sort_order: 1, created_at: -1 }).lean();
+    let list = await PageModel.find({}).sort({ sort_order: 1, created_at: -1 }).lean();
+    if (list.length === 0) {
+      await syncFromSupabase();
+      list = await PageModel.find({}).sort({ sort_order: 1, created_at: -1 }).lean();
+    }
     const formatted = list.map((item) => ({
       id: item.supabase_id || item._id.toString(),
       _id: item._id.toString(),
