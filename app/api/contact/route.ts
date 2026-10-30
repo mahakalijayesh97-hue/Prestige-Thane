@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServer } from '@/lib/supabase/server';
 
@@ -16,16 +18,38 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'One or more fields are too long.' }, { status: 400 });
     }
 
-    const supabase = getSupabaseServer();
-    const { error } = await supabase.from('contact_submissions').insert({
-      name,
-      email,
-      subject: subject || null,
-      message,
-    });
-    if (error) {
-      return NextResponse.json({ error: 'Could not submit your message.' }, { status: 500 });
+    // Attempt saving to MongoDB leads collection
+    try {
+      const { connectToDatabase } = await import('@/lib/mongodb');
+      const { default: Lead } = await import('@/lib/models/Lead');
+      await connectToDatabase();
+      await Lead.create({
+        name,
+        email,
+        phone: 'N/A',
+        configuration: subject || 'Contact Page',
+        intent: 'Contact Message',
+        source: 'Contact Form',
+        notes: message,
+        status: 'new',
+      });
+    } catch (mongoErr) {
+      console.warn('MongoDB contact submission note:', mongoErr);
     }
+
+    // Also attempt saving to Supabase if configured
+    try {
+      const supabase = getSupabaseServer();
+      await supabase.from('contact_submissions').insert({
+        name,
+        email,
+        subject: subject || null,
+        message,
+      });
+    } catch (sbErr) {
+      console.warn('Supabase contact submission note:', sbErr);
+    }
+
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: 'Invalid request.' }, { status: 400 });

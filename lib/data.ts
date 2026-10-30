@@ -11,9 +11,21 @@ import type {
 } from './types';
 
 export async function getSettings(): Promise<SiteSettings | null> {
-  const supabase = getSupabaseServer();
-  const { data } = await supabase.from('site_settings').select('*').limit(1).maybeSingle();
-  return data as SiteSettings | null;
+  try {
+    const supabase = getSupabaseServer();
+    const { data } = await supabase.from('site_settings').select('*').limit(1).maybeSingle();
+    if (data) return data as SiteSettings;
+  } catch (err) {
+    console.warn('getSettings fallback:', err);
+  }
+  return {
+    id: 'prestige-default',
+    site_name: 'Prestige',
+    tagline: 'Luxury Living',
+    logo_url: '/uploads/logo_1792837373812_Prestige_Group_Eagle_Emblem.webp',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  } as SiteSettings;
 }
 
 export async function getNavItems(): Promise<NavItem[]> {
@@ -40,25 +52,38 @@ export async function getNavItems(): Promise<NavItem[]> {
     console.warn('MongoDB nav items fallback:', err);
   }
 
-  const supabase = getSupabaseServer();
-  const { data } = await supabase
-    .from('nav_items')
-    .select('*')
-    .eq('is_active', true)
-    .order('sort_order', { ascending: true });
-  return (data as NavItem[]) ?? [];
+  try {
+    const supabase = getSupabaseServer();
+    const { data } = await supabase
+      .from('nav_items')
+      .select('*')
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true });
+    return (data as NavItem[]) ?? [];
+  } catch (err) {
+    console.warn('Supabase nav items fallback:', err);
+    return [];
+  }
 }
 
 export async function getFooter(): Promise<{ columns: FooterColumn[]; links: FooterLink[] }> {
-  const supabase = getSupabaseServer();
-  const [cols, links] = await Promise.all([
-    supabase.from('footer_columns').select('*').order('sort_order', { ascending: true }),
-    supabase.from('footer_links').select('*').order('sort_order', { ascending: true }),
-  ]);
-  return {
-    columns: (cols.data as FooterColumn[]) ?? [],
-    links: (links.data as FooterLink[]) ?? [],
-  };
+  try {
+    const supabase = getSupabaseServer();
+    const [cols, links] = await Promise.all([
+      supabase.from('footer_columns').select('*').order('sort_order', { ascending: true }),
+      supabase.from('footer_links').select('*').order('sort_order', { ascending: true }),
+    ]);
+    return {
+      columns: (cols.data as FooterColumn[]) ?? [],
+      links: (links.data as FooterLink[]) ?? [],
+    };
+  } catch (err) {
+    console.warn('getFooter fallback:', err);
+    return {
+      columns: [],
+      links: [],
+    };
+  }
 }
 
 export interface FooterCustomSettings {
@@ -192,13 +217,18 @@ export async function getGlobalThemeSettings(): Promise<GlobalThemeSettings> {
 }
 
 export async function getBanners(): Promise<Banner[]> {
-  const supabase = getSupabaseServer();
-  const { data } = await supabase
-    .from('banners')
-    .select('*')
-    .eq('is_active', true)
-    .order('sort_order', { ascending: true });
-  return (data as Banner[]) ?? [];
+  try {
+    const supabase = getSupabaseServer();
+    const { data } = await supabase
+      .from('banners')
+      .select('*')
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true });
+    return (data as Banner[]) ?? [];
+  } catch (err) {
+    console.warn('getBanners fallback:', err);
+    return [];
+  }
 }
 
 export async function getPublishedPage(slug: string): Promise<PageRow | null> {
@@ -228,14 +258,19 @@ export async function getPublishedPage(slug: string): Promise<PageRow | null> {
     console.warn('MongoDB page lookup fallback:', err);
   }
 
-  const supabase = getSupabaseServer();
-  const { data } = await supabase
-    .from('pages')
-    .select('*')
-    .eq('slug', slug)
-    .eq('status', 'published')
-    .maybeSingle();
-  return data as PageRow | null;
+  try {
+    const supabase = getSupabaseServer();
+    const { data } = await supabase
+      .from('pages')
+      .select('*')
+      .eq('slug', slug)
+      .eq('status', 'published')
+      .maybeSingle();
+    return (data as PageRow | null) ?? null;
+  } catch (err) {
+    console.warn('Supabase page lookup fallback:', err);
+    return null;
+  }
 }
 
 export async function getPublishedPages(): Promise<PageRow[]> {
@@ -266,41 +301,61 @@ export async function getPublishedPages(): Promise<PageRow[]> {
     console.warn('MongoDB pages lookup fallback:', err);
   }
 
-  const supabase = getSupabaseServer();
-  const { data } = await supabase
-    .from('pages')
-    .select('*')
-    .eq('status', 'published')
-    .order('sort_order', { ascending: true });
-  return (data as PageRow[]) ?? [];
+  try {
+    const supabase = getSupabaseServer();
+    const { data } = await supabase
+      .from('pages')
+      .select('*')
+      .eq('status', 'published')
+      .order('sort_order', { ascending: true });
+    return (data as PageRow[]) ?? [];
+  } catch (err) {
+    console.warn('Supabase pages lookup fallback:', err);
+    return [];
+  }
 }
 
 export async function getPublishedPosts(): Promise<BlogPost[]> {
-  const supabase = getSupabaseServer();
-  const { data } = await supabase
-    .from('blog_posts')
-    .select('*')
-    .eq('status', 'published')
-    .order('created_at', { ascending: false });
-  return (data as BlogPost[]) ?? [];
+  try {
+    const supabase = getSupabaseServer();
+    const { data } = await supabase
+      .from('blog_posts')
+      .select('*')
+      .eq('status', 'published')
+      .order('created_at', { ascending: false });
+    return (data as BlogPost[]) ?? [];
+  } catch (err) {
+    console.warn('getPublishedPosts fallback:', err);
+    return [];
+  }
 }
 
 export async function getPublishedPost(slug: string): Promise<BlogPost | null> {
-  const supabase = getSupabaseServer();
-  const { data } = await supabase
-    .from('blog_posts')
-    .select('*')
-    .eq('slug', slug)
-    .eq('status', 'published')
-    .maybeSingle();
-  return data as BlogPost | null;
+  try {
+    const supabase = getSupabaseServer();
+    const { data } = await supabase
+      .from('blog_posts')
+      .select('*')
+      .eq('slug', slug)
+      .eq('status', 'published')
+      .maybeSingle();
+    return (data as BlogPost | null) ?? null;
+  } catch (err) {
+    console.warn('getPublishedPost fallback:', err);
+    return null;
+  }
 }
 
 export async function getSubmissions(): Promise<ContactSubmission[]> {
-  const supabase = getSupabaseServer();
-  const { data } = await supabase
-    .from('contact_submissions')
-    .select('*')
-    .order('created_at', { ascending: false });
-  return (data as ContactSubmission[]) ?? [];
+  try {
+    const supabase = getSupabaseServer();
+    const { data } = await supabase
+      .from('contact_submissions')
+      .select('*')
+      .order('created_at', { ascending: false });
+    return (data as ContactSubmission[]) ?? [];
+  } catch (err) {
+    console.warn('getSubmissions fallback:', err);
+    return [];
+  }
 }

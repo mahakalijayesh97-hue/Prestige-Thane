@@ -2,7 +2,8 @@ import { notFound } from 'next/navigation';
 import { getPublishedPage } from '@/lib/data';
 import { CustomPageRenderer } from '@/components/page/custom-page-renderer';
 
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 interface Props {
   params: { slug: string };

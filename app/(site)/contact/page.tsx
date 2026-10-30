@@ -1,3 +1,6 @@
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 import { getSettings } from '@/lib/data';
 import { ContactForm } from './contact-form';
 import { Mail, Phone, MapPin } from 'lucide-react';

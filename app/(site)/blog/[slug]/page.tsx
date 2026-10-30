@@ -3,7 +3,8 @@ import Link from 'next/link';
 import { getPublishedPost } from '@/lib/data';
 import { ArrowLeft } from 'lucide-react';
 
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 interface Props {
   params: { slug: string };

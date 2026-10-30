@@ -425,7 +425,7 @@ export default function AdminNavPage() {
                 </Badge>
               </div>
               <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 leading-relaxed">
-                Design and organize your website's header links, create multi-level dropdowns, and rearrange link positions.
+                Design and organize your website&apos;s header links, create multi-level dropdowns, and rearrange link positions.
               </p>
             </div>
           </div>

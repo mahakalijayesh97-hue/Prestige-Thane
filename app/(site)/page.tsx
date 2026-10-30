@@ -4,8 +4,8 @@ import { CustomPageRenderer } from '@/components/page/custom-page-renderer';
 import { filterHomePageSections } from '@/lib/page-content';
 import { FileText, Newspaper } from 'lucide-react';
 
-export const dynamic = 'auto';
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export default async function HomePage() {
   const [banners, pages, posts, settings] = await Promise.all([
