@@ -145,6 +145,15 @@ export interface GlobalThemeSettings {
   navbar_cta_text?: string;
   navbar_cta_url?: string;
   navbar_cta_show?: boolean;
+  advisor_chat_enabled?: boolean;
+  advisor_chat_title?: string;
+  advisor_chat_subtitle?: string;
+  advisor_chat_welcome_title?: string;
+  advisor_chat_welcome_msg?: string;
+  advisor_chat_action_1?: string;
+  advisor_chat_action_2?: string;
+  advisor_chat_whatsapp?: string;
+  advisor_chat_prefill?: string;
 }
 
 export async function getGlobalThemeSettings(): Promise<GlobalThemeSettings> {
@@ -152,25 +161,7 @@ export async function getGlobalThemeSettings(): Promise<GlobalThemeSettings> {
     const { connectToDatabase } = await import('./mongodb');
     const { default: ThemeSetting } = await import('./models/ThemeSetting');
     await connectToDatabase();
-    const doc = await ThemeSetting.findOne({}).lean() as {
-      primary_color?: string;
-      accent_color?: string;
-      text_color?: string;
-      heading_color?: string;
-      muted_text_color?: string;
-      site_name_color?: string;
-      sub_site_name?: string;
-      sub_site_name_color?: string;
-      favicon_url?: string;
-      custom_css?: string;
-      custom_js?: string;
-      header_scripts?: string;
-      navbar_phone?: string;
-      navbar_phone_show?: boolean;
-      navbar_cta_text?: string;
-      navbar_cta_url?: string;
-      navbar_cta_show?: boolean;
-    } | null;
+    const doc = await ThemeSetting.findOne({}).lean() as any;
     if (doc) {
       return {
         primary_color: doc.primary_color || '#2563eb',
@@ -190,6 +181,15 @@ export async function getGlobalThemeSettings(): Promise<GlobalThemeSettings> {
         navbar_cta_text: doc.navbar_cta_text !== undefined ? doc.navbar_cta_text : 'Book Site Visit',
         navbar_cta_url: doc.navbar_cta_url !== undefined ? doc.navbar_cta_url : '#book-site-visit',
         navbar_cta_show: doc.navbar_cta_show !== false,
+        advisor_chat_enabled: doc.advisor_chat_enabled !== false,
+        advisor_chat_title: doc.advisor_chat_title || 'Prestige Thane Desk',
+        advisor_chat_subtitle: doc.advisor_chat_subtitle || 'Pre-Launch Advisor Online',
+        advisor_chat_welcome_title: doc.advisor_chat_welcome_title || 'Welcome to Prestige Thane!',
+        advisor_chat_welcome_msg: doc.advisor_chat_welcome_msg || 'Prestige Thane is an upcoming pre-launch project. Register your interest to get official updates on launch timing, pricing, and layout updates.',
+        advisor_chat_action_1: doc.advisor_chat_action_1 || 'Request Price Updates',
+        advisor_chat_action_2: doc.advisor_chat_action_2 || 'Request Master & Floor Plan Layouts',
+        advisor_chat_whatsapp: doc.advisor_chat_whatsapp || '919022222448',
+        advisor_chat_prefill: doc.advisor_chat_prefill || 'Hi, I would like to receive pre-launch early access updates',
       };
     }
   } catch {
@@ -213,6 +213,15 @@ export async function getGlobalThemeSettings(): Promise<GlobalThemeSettings> {
     navbar_cta_text: 'Book Site Visit',
     navbar_cta_url: '#book-site-visit',
     navbar_cta_show: true,
+    advisor_chat_enabled: true,
+    advisor_chat_title: 'Prestige Thane Desk',
+    advisor_chat_subtitle: 'Pre-Launch Advisor Online',
+    advisor_chat_welcome_title: 'Welcome to Prestige Thane!',
+    advisor_chat_welcome_msg: 'Prestige Thane is an upcoming pre-launch project. Register your interest to get official updates on launch timing, pricing, and layout updates.',
+    advisor_chat_action_1: 'Request Price Updates',
+    advisor_chat_action_2: 'Request Master & Floor Plan Layouts',
+    advisor_chat_whatsapp: '919022222448',
+    advisor_chat_prefill: 'Hi, I would like to receive pre-launch early access updates',
   };
 }
 

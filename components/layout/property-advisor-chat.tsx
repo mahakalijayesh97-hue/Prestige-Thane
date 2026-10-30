@@ -6,13 +6,15 @@ import { X, Send, ArrowRight, MessageSquare, Sparkles } from 'lucide-react';
 interface AdvisorChatProps {
   projectTitle?: string;
   whatsappNumber?: string;
+  initialEnabled?: boolean;
 }
 
 export function PropertyAdvisorChat({
   projectTitle = 'Prestige Thane',
   whatsappNumber = '919022222448',
+  initialEnabled = true,
 }: AdvisorChatProps) {
-  const [isEnabled, setIsEnabled] = useState(true);
+  const [isEnabled, setIsEnabled] = useState(initialEnabled);
   const [isOpen, setIsOpen] = useState(false);
   const [hasUnread, setHasUnread] = useState(true);
   const [deskTitle, setDeskTitle] = useState('Prestige Thane Desk');
@@ -217,13 +219,12 @@ export function PropertyAdvisorChat({
 
       {/* ───────────────── FLOATING CIRCLE BUTTON ───────────────── */}
       <div className="flex items-center">
-        {/* Floating Circle Button */}
+        {/* Floating Circle Button without hover tooltip pill */}
         <button
           type="button"
           onClick={handleToggle}
           className="relative w-14 h-14 rounded-full bg-[#00A86B] hover:bg-[#00965F] text-white flex items-center justify-center shadow-[0_8px_25px_rgba(0,168,107,0.35)] hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer"
-          title="Chat with Property Advisor"
-          aria-label="Open Property Advisor Chat"
+          aria-label="Open Live Advisor WhatsApp Chat"
         >
           {/* Custom White Chat Bubble Outline matching screenshot */}
           <svg

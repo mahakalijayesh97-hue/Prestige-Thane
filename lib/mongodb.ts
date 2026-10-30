@@ -52,34 +52,38 @@ if (!cached) {
 export async function connectToDatabase(): Promise<typeof mongoose> {
   const targetUri = getMongoUri();
 
-  // If already connected to target Live Atlas database
-  if (
-    cached!.conn &&
-    cached!.conn.connection &&
-    cached!.conn.connection.readyState === 1 &&
-    cached!.uri === targetUri &&
-    cached!.conn.connection.name === 'Prestige'
-  ) {
+  // If already connected to target database
+  if (cached!.conn && mongoose.connection.readyState === 1 && cached!.uri === targetUri) {
     return cached!.conn;
   }
 
-  // If connected to local or old database, disconnect first
-  if (cached!.conn) {
+  // If an in-flight connection promise is already connecting to this URI, await it
+  if (cached!.promise && cached!.uri === targetUri) {
+    try {
+      cached!.conn = await cached!.promise;
+      return cached!.conn;
+    } catch {
+      cached!.promise = null;
+    }
+  }
+
+  // Disconnect if switching URIs
+  if (mongoose.connection.readyState !== 0 && cached!.uri !== targetUri) {
     try {
       await mongoose.disconnect();
     } catch {}
     cached!.conn = null;
     cached!.promise = null;
-    cached!.uri = null;
   }
 
-  const opts = {
-    bufferCommands: false,
+  const opts: mongoose.ConnectOptions = {
+    bufferCommands: true,
     serverSelectionTimeoutMS: 10000,
   };
 
   cached!.uri = targetUri;
   cached!.promise = mongoose.connect(targetUri, opts).then((instance) => {
+    cached!.conn = instance;
     return instance;
   });
 
