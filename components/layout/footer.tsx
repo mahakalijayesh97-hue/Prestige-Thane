@@ -26,7 +26,7 @@ export async function Footer() {
 
   if (hasCustomFooter && !footerCustom.show_default_links) {
     return (
-      <footer className="mt-auto w-full overflow-x-hidden border-t border-slate-900 bg-slate-950 p-0 text-slate-400" id="main-footer">
+      <footer className="mt-auto w-full overflow-x-hidden border-t border-slate-900 bg-slate-950 p-0 text-slate-400 [content-visibility:auto] [contain-intrinsic-size:1px_400px]" id="main-footer">
         {footerCustom.footer_image && (
           <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
             <div className="overflow-hidden rounded-xl border border-slate-800">
@@ -49,7 +49,7 @@ export async function Footer() {
   }
 
   return (
-    <footer className="mt-auto border-t border-border bg-secondary/40">
+    <footer className="mt-auto border-t border-border bg-secondary/40 [content-visibility:auto] [contain-intrinsic-size:1px_400px]">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         {/* Optional Custom Footer Image / Banner */}
         {footerCustom.footer_image && (

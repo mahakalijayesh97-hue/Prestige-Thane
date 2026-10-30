@@ -80,7 +80,9 @@ export default async function RootLayout({
           </>
         ) : null}
 
-        {/* Preload Hero Background & Inter Font for Instant LCP */}
+        {/* Preconnect & Preload Critical Resources */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preload" as="image" href="/assets/prestige-hero-bg.webp" type="image/webp" fetchPriority="high" />
         {cdnTags.map((tag, idx) => {
           if (tag.type === 'link') {
@@ -88,7 +90,7 @@ export default async function RootLayout({
           }
           if (tag.type === 'script') {
             if (tag.props.src) {
-              return <script key={`admin-cdn-script-${idx}`} {...tag.props} />;
+              return <script key={`admin-cdn-script-${idx}`} defer {...tag.props} />;
             }
             if (tag.content) {
               return (
