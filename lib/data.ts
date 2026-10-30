@@ -59,11 +59,21 @@ export async function getNavItems(): Promise<NavItem[]> {
       .select('*')
       .eq('is_active', true)
       .order('sort_order', { ascending: true });
-    return (data as NavItem[]) ?? [];
+    if (data && data.length > 0) return data as NavItem[];
   } catch (err) {
     console.warn('Supabase nav items fallback:', err);
-    return [];
   }
+
+  // Instant luxury navigation fallback for Vercel cold starts
+  return [
+    { id: 'nav-1', label: 'Overview', url: '#overview', parent_id: null, sort_order: 1, target: '_self', is_active: true, created_at: '', updated_at: '' },
+    { id: 'nav-2', label: 'Pricing', url: '#pricing', parent_id: null, sort_order: 2, target: '_self', is_active: true, created_at: '', updated_at: '' },
+    { id: 'nav-3', label: 'Amenities', url: '#amenities', parent_id: null, sort_order: 3, target: '_self', is_active: true, created_at: '', updated_at: '' },
+    { id: 'nav-4', label: 'Floor Plans', url: '#floor-plans', parent_id: null, sort_order: 4, target: '_self', is_active: true, created_at: '', updated_at: '' },
+    { id: 'nav-5', label: 'Gallery', url: '#gallery', parent_id: null, sort_order: 5, target: '_self', is_active: true, created_at: '', updated_at: '' },
+    { id: 'nav-6', label: 'Location', url: '#location', parent_id: null, sort_order: 6, target: '_self', is_active: true, created_at: '', updated_at: '' },
+    { id: 'nav-7', label: 'FAQ', url: '#faq', parent_id: null, sort_order: 7, target: '_self', is_active: true, created_at: '', updated_at: '' },
+  ];
 }
 
 export async function getFooter(): Promise<{ columns: FooterColumn[]; links: FooterLink[] }> {

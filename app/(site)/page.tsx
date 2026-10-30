@@ -1,8 +1,9 @@
 import Link from 'next/link';
 import { getBanners, getPublishedPages, getPublishedPosts, getSettings } from '@/lib/data';
 import { CustomPageRenderer } from '@/components/page/custom-page-renderer';
-import { filterHomePageSections } from '@/lib/page-content';
-import { FileText, Newspaper } from 'lucide-react';
+import { filterHomePageSections, buildPageContent } from '@/lib/page-content';
+import { PRESTIGE_HERO_TEMPLATE } from '@/lib/templates/hero-template';
+import { Newspaper } from 'lucide-react';
 
 export const revalidate = 60;
 
@@ -18,9 +19,10 @@ export default async function HomePage() {
   const recentPosts = posts.slice(0, 3);
 
   const publishedSlugs = new Set(pages.map((p) => p.slug));
-  const renderedContent = homePage
+  const fallbackHomeContent = buildPageContent(PRESTIGE_HERO_TEMPLATE);
+  const renderedContent = homePage?.content
     ? filterHomePageSections(homePage.content, publishedSlugs)
-    : '';
+    : fallbackHomeContent;
 
   // Other published pages to render as sections below Hero
   const otherPublishedPages = pages.filter(
@@ -35,14 +37,8 @@ export default async function HomePage() {
 
   return (
     <div>
-      {/* Homepage Content (rendered dynamically from Pages -> Home) */}
-      {homePage ? (
-        <CustomPageRenderer content={renderedContent} className="w-full" />
-      ) : (
-        <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-          <p className="text-muted-foreground">No homepage content yet.</p>
-        </section>
-      )}
+      {/* Homepage Content (rendered dynamically from Pages -> Home or instant fallback) */}
+      <CustomPageRenderer content={renderedContent} className="w-full" />
 
       {/* Published Page Sections */}
       {otherPublishedPages.map((sec) => (
