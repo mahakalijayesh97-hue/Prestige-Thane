@@ -33,6 +33,9 @@ import {
   Camera,
   Pencil,
   Link2,
+  Plus,
+  Users,
+  UserCheck,
 } from 'lucide-react';
 
 interface Settings {
@@ -49,6 +52,15 @@ interface Settings {
   social_linkedin: string | null;
   newsletter_enabled: boolean;
   copyright_text: string;
+}
+
+export interface AdvisorItem {
+  id: string;
+  name: string;
+  role: string;
+  phone: string;
+  avatar: string;
+  status: string;
 }
 
 const COLOR_PRESETS = [
@@ -89,6 +101,13 @@ const TEXT_COLOR_PRESETS = [
 
 const QUICK_COLORS_SITE = ['#08172A', '#0F2942', '#0284C7', '#D97706', '#2563EB', '#334155'];
 const QUICK_COLORS_SUB = ['#000000', '#D97706', '#059669', '#0284C7', '#2563EB', '#64748B'];
+
+const ADVISOR_AVATAR_PRESETS = [
+  'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80',
+  'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=200&q=80',
+  'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=200&q=80',
+  'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=200&q=80',
+];
 
 export default function AdminSettingsPage() {
   const [s, setS] = useState<Settings | null>(null);
@@ -156,6 +175,32 @@ export default function AdminSettingsPage() {
   const [advisorChatPrefill, setAdvisorChatPrefill] = useState(
     'Hi, I would like to receive pre-launch early access'
   );
+
+  const [advisors, setAdvisors] = useState<AdvisorItem[]>([
+    {
+      id: '1',
+      name: 'Priya Sharma',
+      role: 'Senior Property Specialist',
+      phone: '9102222448',
+      avatar:
+        'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80',
+      status: 'Online',
+    },
+    {
+      id: '2',
+      name: 'Rahul Verma',
+      role: 'Site Visit Coordinator',
+      phone: '9102222448',
+      avatar:
+        'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=200&q=80',
+      status: 'Available',
+    },
+  ]);
+  const [uploadingAdvisorAvatarId, setUploadingAdvisorAvatarId] = useState<string | null>(null);
+  const [activeAdvisorUploadId, setActiveAdvisorUploadId] = useState<string | null>(null);
+  const [editingUrlAdvisorId, setEditingUrlAdvisorId] = useState<string | null>(null);
+  const [advisorUrlDraft, setAdvisorUrlDraft] = useState('');
+  const advisorFileInputRef = useRef<HTMLInputElement>(null);
 
   const addCdnPreset = (type: 'bootstrap' | 'jquery' | 'css' | 'js') => {
     let snippet = '';
@@ -267,6 +312,9 @@ export default function AdminSettingsPage() {
         if (data.advisor_chat_action_2 !== undefined) setAdvisorChatAction2(data.advisor_chat_action_2);
         if (data.advisor_chat_whatsapp !== undefined) setAdvisorChatWhatsapp(data.advisor_chat_whatsapp);
         if (data.advisor_chat_prefill !== undefined) setAdvisorChatPrefill(data.advisor_chat_prefill);
+        if (Array.isArray(data.advisor_chat_advisors) && data.advisor_chat_advisors.length > 0) {
+          setAdvisors(data.advisor_chat_advisors);
+        }
       }
     } catch (err) {
       console.error('Failed to load theme settings:', err);
@@ -339,6 +387,7 @@ export default function AdminSettingsPage() {
           advisor_chat_action_2: advisorChatAction2,
           advisor_chat_whatsapp: advisorChatWhatsapp,
           advisor_chat_prefill: advisorChatPrefill,
+          advisor_chat_advisors: advisors,
         }),
       });
 
@@ -478,6 +527,57 @@ export default function AdminSettingsPage() {
       if (heroImageInputRef.current) heroImageInputRef.current.value = '';
     }
   }
+
+  const handleAddAdvisor = () => {
+    const newAdv: AdvisorItem = {
+      id: `adv_${Date.now()}`,
+      name: `Advisor ${advisors.length + 1}`,
+      role: 'Property Specialist',
+      phone: advisorChatWhatsapp || '9102222448',
+      avatar:
+        advisors.length % 2 === 0
+          ? 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80'
+          : 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=200&q=80',
+      status: 'Online',
+    };
+    setAdvisors((prev) => [...prev, newAdv]);
+  };
+
+  const handleUpdateAdvisor = (id: string, field: keyof AdvisorItem, val: string) => {
+    setAdvisors((prev) =>
+      prev.map((adv) => (adv.id === id ? { ...adv, [field]: val } : adv))
+    );
+  };
+
+  const handleDeleteAdvisor = (id: string) => {
+    if (advisors.length <= 1) return;
+    setAdvisors((prev) => prev.filter((adv) => adv.id !== id));
+  };
+
+  const handleAdvisorAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !activeAdvisorUploadId) return;
+
+    setUploadingAdvisorAvatarId(activeAdvisorUploadId);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        handleUpdateAdvisor(activeAdvisorUploadId, 'avatar', data.url);
+      }
+    } catch (err) {
+      console.error('Failed to upload advisor avatar:', err);
+    } finally {
+      setUploadingAdvisorAvatarId(null);
+      setActiveAdvisorUploadId(null);
+      if (advisorFileInputRef.current) advisorFileInputRef.current.value = '';
+    }
+  };
 
   if (loading || !s) {
     return (
@@ -1445,137 +1545,494 @@ export default function AdminSettingsPage() {
           </div>
         </div>
 
+        {/* Hidden input for advisor avatar upload */}
+        <input
+          ref={advisorFileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleAdvisorAvatarUpload}
+          className="hidden"
+        />
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           {/* Left Live Customer Preview */}
           <div className="space-y-2">
-            <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
-              Live Customer Widget Preview
-            </span>
-            <div className="rounded-2xl border border-slate-200 bg-gradient-to-b from-slate-50 to-white p-4 shadow-xs">
-              <div className="flex items-center gap-3">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80"
-                  alt="Property Advisor"
-                  className="h-12 w-12 rounded-full object-cover border-2 border-emerald-500 shadow-xs"
-                />
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-xs font-bold text-slate-900 truncate">
-                    Chat with our Property Advisor
-                  </h4>
-                  <p className="text-[10px] text-slate-500 truncate">
-                    Get instant answers about Prestige Thane
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                Live Customer Widget Preview
+              </span>
+              <span className="text-[10px] text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                {advisors.length} Advisor{advisors.length > 1 ? 's' : ''} Active
+              </span>
+            </div>
+
+            {/* Interactive Preview Container styled like the live frontend popup */}
+            <div className="rounded-2xl border border-slate-200/90 bg-white overflow-hidden shadow-md">
+              {/* Green Header */}
+              <div className="bg-[#008A5E] px-4 py-3 text-white flex items-center justify-between">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                    <MessageSquare className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="min-w-0">
+                    <h4 className="font-bold text-xs truncate">
+                      {advisorChatTitle || 'Prestige Thane Desk'}
+                    </h4>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse" />
+                      <span className="text-[10px] text-emerald-100 font-medium truncate">
+                        {advisorChatSubtitle || 'Pre-Launch Advisor Online'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Chat Body Preview */}
+              <div className="p-3.5 bg-slate-50/70 space-y-2.5 max-h-[460px] overflow-y-auto">
+                {/* Welcome Bubble */}
+                <div className="p-3 rounded-xl bg-white border border-slate-200 shadow-2xs space-y-1">
+                  <h5 className="font-bold text-slate-900 text-[11px]">
+                    {advisorChatWelcomeTitle || 'Welcome to Prestige Thane!'}
+                  </h5>
+                  <p className="text-[10.5px] text-slate-600 leading-relaxed">
+                    {advisorChatWelcomeMsg ||
+                      'Prestige Thane is an upcoming pre-launch project. Register your interest for official updates.'}
                   </p>
                 </div>
-                <a
-                  href={`https://wa.me/${advisorChatWhatsapp}?text=${encodeURIComponent(advisorChatPrefill)}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold shadow-xs flex items-center gap-1 shrink-0"
-                >
-                  <span>Start Chat</span>
-                </a>
+
+                {/* Multiple Advisors List Preview */}
+                <div className="space-y-1.5 pt-1">
+                  <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider block px-1">
+                    Select an Advisor to chat:
+                  </span>
+                  <div className="space-y-1.5">
+                    {advisors.map((adv) => (
+                      <div
+                        key={adv.id}
+                        className="w-full p-2.5 rounded-xl border border-slate-200/90 bg-white hover:bg-emerald-50/40 transition-colors flex items-center justify-between gap-2 shadow-2xs"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          {/* Interactive Avatar in Preview */}
+                          <div
+                            onClick={() => {
+                              setActiveAdvisorUploadId(adv.id);
+                              advisorFileInputRef.current?.click();
+                            }}
+                            className="relative shrink-0 group/av cursor-pointer"
+                            title="Click to change/upload photo"
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={
+                                adv.avatar ||
+                                'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80'
+                              }
+                              alt={adv.name}
+                              className="w-10 h-10 rounded-full object-cover border-2 border-emerald-500/60 group-hover/av:scale-105 group-hover/av:opacity-85 transition-all shadow-xs"
+                            />
+                            {/* Hover Camera Overlay */}
+                            <div className="absolute inset-0 bg-slate-900/60 rounded-full opacity-0 group-hover/av:opacity-100 flex items-center justify-center text-white transition-opacity">
+                              <Camera className="w-3.5 h-3.5 text-white" />
+                            </div>
+                            {uploadingAdvisorAvatarId === adv.id && (
+                              <div className="absolute inset-0 bg-slate-900/70 rounded-full flex items-center justify-center text-white z-10">
+                                <Loader2 className="h-3.5 w-3.5 animate-spin text-white" />
+                              </div>
+                            )}
+                            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white" />
+                          </div>
+                          <div className="min-w-0">
+                            <h6 className="text-xs font-bold text-slate-900 truncate">
+                              {adv.name}
+                            </h6>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[10px] text-slate-500 truncate">
+                                {adv.role || 'Advisor'}
+                              </span>
+                              {adv.status && (
+                                <span className="text-[8.5px] text-emerald-600 font-semibold bg-emerald-50 px-1 py-0.2 rounded">
+                                  {adv.status}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <a
+                          href={`https://wa.me/${adv.phone || advisorChatWhatsapp}?text=${encodeURIComponent(
+                            `Hello ${adv.name}, ${advisorChatPrefill}`
+                          )}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[10.5px] font-semibold shrink-0 shadow-2xs flex items-center gap-1"
+                        >
+                          <span>Chat</span>
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Quick Action Pills Preview */}
+                {advisorChatAction1 && (
+                  <div className="p-2 rounded-lg border border-amber-300 bg-amber-50/80 text-amber-950 font-bold text-[10.5px] flex items-center justify-between">
+                    <span>{advisorChatAction1}</span>
+                    <span className="text-amber-700">→</span>
+                  </div>
+                )}
+                {advisorChatAction2 && (
+                  <div className="p-2 rounded-lg border border-slate-200 bg-slate-100/80 text-slate-900 font-bold text-[10.5px] flex items-center justify-between">
+                    <span>{advisorChatAction2}</span>
+                    <span className="text-slate-500">→</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Bottom input area mock */}
+              <div className="p-2 bg-white border-t border-slate-200 flex items-center gap-1.5">
+                <input
+                  type="text"
+                  readOnly
+                  value={advisorChatPrefill}
+                  className="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[10.5px] text-slate-500"
+                />
+                <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center text-xs shrink-0 font-bold">
+                  ✓
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Right Inputs Grid (2 columns) */}
-          <div className="lg:col-span-2 space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-              <div className="space-y-1">
-                <Label className="text-xs font-semibold text-slate-700">Desk Header Title</Label>
-                <input
-                  type="text"
-                  value={advisorChatTitle}
-                  onChange={(e) => setAdvisorChatTitle(e.target.value)}
-                  placeholder="Prestige Thane Desk"
-                  className="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
-                />
-              </div>
+          {/* Right Inputs & Multi-Advisor Manager (2 columns) */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* 1. General Chat Desk Configuration */}
+            <div className="space-y-4 p-4 rounded-xl border border-slate-200/80 bg-slate-50/50">
+              <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wider block">
+                General Chat Widget Settings
+              </span>
 
-              <div className="space-y-1">
-                <Label className="text-xs font-semibold text-slate-700">
-                  Advisor Status Subtitle
-                </Label>
-                <input
-                  type="text"
-                  value={advisorChatSubtitle}
-                  onChange={(e) => setAdvisorChatSubtitle(e.target.value)}
-                  placeholder="Pre-Launch Advisor Online"
-                  className="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <Label className="text-xs font-semibold text-slate-700">
-                  Advisor WhatsApp Number
-                </Label>
-                <div className="relative flex items-center rounded-xl border border-slate-200 bg-white focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/20">
-                  <div className="pl-3 text-emerald-600 pointer-events-none">
-                    <Phone className="h-4 w-4" />
-                  </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold text-slate-700">Desk Header Title</Label>
                   <input
                     type="text"
-                    value={advisorChatWhatsapp}
-                    onChange={(e) => setAdvisorChatWhatsapp(e.target.value)}
-                    placeholder="9102222448"
-                    className="w-full h-10 border-0 bg-transparent px-3 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none"
+                    value={advisorChatTitle}
+                    onChange={(e) => setAdvisorChatTitle(e.target.value)}
+                    placeholder="Prestige Thane Desk"
+                    className="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold text-slate-700">
+                    Advisor Status Subtitle
+                  </Label>
+                  <input
+                    type="text"
+                    value={advisorChatSubtitle}
+                    onChange={(e) => setAdvisorChatSubtitle(e.target.value)}
+                    placeholder="Pre-Launch Advisor Online"
+                    className="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold text-slate-700">
+                    Default WhatsApp Number
+                  </Label>
+                  <div className="relative flex items-center rounded-xl border border-slate-200 bg-white focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/20">
+                    <div className="pl-3 text-emerald-600 pointer-events-none">
+                      <Phone className="h-4 w-4" />
+                    </div>
+                    <input
+                      type="text"
+                      value={advisorChatWhatsapp}
+                      onChange={(e) => setAdvisorChatWhatsapp(e.target.value)}
+                      placeholder="9102222448"
+                      className="w-full h-10 border-0 bg-transparent px-3 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold text-slate-700">
+                    Quick Action (1) (Mobile Button)
+                  </Label>
+                  <input
+                    type="text"
+                    value={advisorChatAction1}
+                    onChange={(e) => setAdvisorChatAction1(e.target.value)}
+                    placeholder="Request Price Updates"
+                    className="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold text-slate-700">
+                    Quick Action (2) (Mobile Button)
+                  </Label>
+                  <input
+                    type="text"
+                    value={advisorChatAction2}
+                    onChange={(e) => setAdvisorChatAction2(e.target.value)}
+                    placeholder="Request Master & Floor Plan Layouts"
+                    className="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold text-slate-700">Welcome Card Title</Label>
+                  <input
+                    type="text"
+                    value={advisorChatWelcomeTitle}
+                    onChange={(e) => setAdvisorChatWelcomeTitle(e.target.value)}
+                    placeholder="Welcome to Prestige Thane!"
+                    className="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold text-slate-700">
+                    Default Input Prefill Text
+                  </Label>
+                  <input
+                    type="text"
+                    value={advisorChatPrefill}
+                    onChange={(e) => setAdvisorChatPrefill(e.target.value)}
+                    placeholder="Hi, I would like to receive pre-launch early access"
+                    className="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              <div className="space-y-1">
-                <Label className="text-xs font-semibold text-slate-700">
-                  Quick Action (1) (Mobile Button)
-                </Label>
-                <input
-                  type="text"
-                  value={advisorChatAction1}
-                  onChange={(e) => setAdvisorChatAction1(e.target.value)}
-                  placeholder="Request Price Updates"
-                  className="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
-                />
+            {/* 2. Multiple Advisors List & Manager */}
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-200 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="h-7 w-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
+                    <Users className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900">
+                      Property Advisors &amp; Agents ({advisors.length})
+                    </h3>
+                    <p className="text-[11px] text-slate-500">
+                      Add multiple team members with individual photos, titles, and WhatsApp numbers.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleAddAdvisor}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs transition-transform active:scale-95 cursor-pointer self-start sm:self-auto"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Add New Advisor</span>
+                </button>
               </div>
 
-              <div className="space-y-1">
-                <Label className="text-xs font-semibold text-slate-700">
-                  Quick Action (2) (Mobile Button)
-                </Label>
-                <input
-                  type="text"
-                  value={advisorChatAction2}
-                  onChange={(e) => setAdvisorChatAction2(e.target.value)}
-                  placeholder="Request Master & Floor Plan Layouts"
-                  className="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
-                />
-              </div>
-            </div>
+              {/* Advisor Cards */}
+              <div className="space-y-3">
+                {advisors.map((adv, idx) => (
+                  <div
+                    key={adv.id}
+                    className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs hover:border-slate-300 transition-all space-y-3"
+                  >
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                      <div className="flex items-center gap-2">
+                        <span className="h-5 w-5 rounded-full bg-slate-900 text-white text-[10px] font-bold flex items-center justify-center">
+                          {idx + 1}
+                        </span>
+                        <span className="text-xs font-bold text-slate-800">
+                          {adv.name || `Advisor #${idx + 1}`}
+                        </span>
+                        <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                          {adv.status || 'Online'}
+                        </span>
+                      </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              <div className="space-y-1">
-                <Label className="text-xs font-semibold text-slate-700">Welcome Card Title</Label>
-                <input
-                  type="text"
-                  value={advisorChatWelcomeTitle}
-                  onChange={(e) => setAdvisorChatWelcomeTitle(e.target.value)}
-                  placeholder="Welcome to Prestige Thane!"
-                  className="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
-                />
-              </div>
+                      {advisors.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteAdvisor(adv.id)}
+                          className="h-7 w-7 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center transition-colors cursor-pointer"
+                          title="Delete Advisor"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </div>
 
-              <div className="space-y-1">
-                <Label className="text-xs font-semibold text-slate-700">
-                  Default Input Prefill Text
-                </Label>
-                <input
-                  type="text"
-                  value={advisorChatPrefill}
-                  onChange={(e) => setAdvisorChatPrefill(e.target.value)}
-                  placeholder="Hi, I would like to receive pre-launch early access"
-                  className="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
-                />
+                    <div className="flex flex-col sm:flex-row gap-4 items-start">
+                      {/* Avatar Photo, Upload & URL Controls */}
+                      <div className="flex flex-col items-center gap-2 shrink-0 self-center sm:self-start">
+                        <div
+                          onClick={() => {
+                            setActiveAdvisorUploadId(adv.id);
+                            advisorFileInputRef.current?.click();
+                          }}
+                          className="relative group cursor-pointer"
+                          title="Click to upload new photo"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={
+                              adv.avatar ||
+                              'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80'
+                            }
+                            alt={adv.name}
+                            className="w-14 h-14 rounded-full object-cover border-2 border-emerald-500 shadow-sm group-hover:opacity-85 transition-opacity"
+                          />
+                          <div className="absolute inset-0 rounded-full bg-slate-900/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
+                            <Camera className="h-4 w-4" />
+                          </div>
+                          {uploadingAdvisorAvatarId === adv.id && (
+                            <div className="absolute inset-0 bg-slate-900/70 rounded-full flex items-center justify-center text-white">
+                              <Loader2 className="h-4 w-4 animate-spin text-white" />
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveAdvisorUploadId(adv.id);
+                              advisorFileInputRef.current?.click();
+                            }}
+                            className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-lg border border-indigo-200 transition-colors"
+                          >
+                            <Upload className="h-3 w-3" />
+                            <span>Upload</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAdvisorUrlDraft(adv.avatar || '');
+                              setEditingUrlAdvisorId(editingUrlAdvisorId === adv.id ? null : adv.id);
+                            }}
+                            className="text-[10px] font-semibold text-slate-600 hover:text-slate-800 flex items-center gap-1 cursor-pointer bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded-lg border border-slate-200 transition-colors"
+                          >
+                            <Link2 className="h-3 w-3" />
+                            <span>URL</span>
+                          </button>
+                        </div>
+
+                        {/* Quick Presets */}
+                        <div className="flex items-center gap-1 pt-0.5" title="Quick pick photo">
+                          {ADVISOR_AVATAR_PRESETS.map((preset, pIdx) => (
+                            <button
+                              key={pIdx}
+                              type="button"
+                              onClick={() => handleUpdateAdvisor(adv.id, 'avatar', preset)}
+                              className={`w-5 h-5 rounded-full overflow-hidden border transition-transform hover:scale-125 cursor-pointer ${
+                                adv.avatar === preset ? 'border-emerald-500 ring-2 ring-emerald-500/30' : 'border-slate-300'
+                              }`}
+                              title={`Choose photo preset #${pIdx + 1}`}
+                            >
+                              <img src={preset} alt={`Preset ${pIdx + 1}`} className="w-full h-full object-cover" />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Advisor Field Inputs */}
+                      <div className="flex-1 w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                        <div className="space-y-1">
+                          <Label className="text-[11px] font-semibold text-slate-700">
+                            Advisor Name
+                          </Label>
+                          <input
+                            type="text"
+                            value={adv.name}
+                            onChange={(e) => handleUpdateAdvisor(adv.id, 'name', e.target.value)}
+                            placeholder="Priya Sharma"
+                            className="w-full h-9 rounded-xl border border-slate-200 bg-white px-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <Label className="text-[11px] font-semibold text-slate-700">
+                            Role / Department
+                          </Label>
+                          <input
+                            type="text"
+                            value={adv.role}
+                            onChange={(e) => handleUpdateAdvisor(adv.id, 'role', e.target.value)}
+                            placeholder="Senior Sales Specialist"
+                            className="w-full h-9 rounded-xl border border-slate-200 bg-white px-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <Label className="text-[11px] font-semibold text-slate-700">
+                            WhatsApp Number
+                          </Label>
+                          <input
+                            type="text"
+                            value={adv.phone}
+                            onChange={(e) => handleUpdateAdvisor(adv.id, 'phone', e.target.value)}
+                            placeholder="9102222448"
+                            className="w-full h-9 rounded-xl border border-slate-200 bg-white px-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <Label className="text-[11px] font-semibold text-slate-700">
+                            Status Text
+                          </Label>
+                          <input
+                            type="text"
+                            value={adv.status}
+                            onChange={(e) => handleUpdateAdvisor(adv.id, 'status', e.target.value)}
+                            placeholder="Online"
+                            className="w-full h-9 rounded-xl border border-slate-200 bg-white px-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Collapsible Photo URL Input */}
+                    {editingUrlAdvisorId === adv.id && (
+                      <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-50 border border-slate-200 animate-in fade-in duration-150">
+                        <input
+                          type="text"
+                          value={advisorUrlDraft}
+                          onChange={(e) => setAdvisorUrlDraft(e.target.value)}
+                          placeholder="Paste photo URL (https://...)"
+                          className="flex-1 h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (advisorUrlDraft.trim()) {
+                              handleUpdateAdvisor(adv.id, 'avatar', advisorUrlDraft.trim());
+                              setEditingUrlAdvisorId(null);
+                            }
+                          }}
+                          className="h-8 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold cursor-pointer shadow-xs"
+                        >
+                          Apply
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingUrlAdvisorId(null)}
+                          className="h-8 px-2.5 rounded-lg text-slate-500 hover:text-slate-800 text-xs font-medium cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           </div>

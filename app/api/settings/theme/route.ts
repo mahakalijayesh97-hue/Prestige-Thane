@@ -66,6 +66,20 @@ export async function GET() {
         advisor_chat_whatsapp: doc?.advisor_chat_whatsapp || '919022222448',
         advisor_chat_prefill:
           doc?.advisor_chat_prefill || 'Hi, I would like to receive pre-launch early access updates',
+        advisor_chat_advisors:
+          doc && Array.isArray(doc.advisor_chat_advisors) && doc.advisor_chat_advisors.length > 0
+            ? doc.advisor_chat_advisors
+            : [
+                {
+                  id: '1',
+                  name: 'Priya Sharma',
+                  role: doc?.advisor_chat_subtitle || 'Pre-Launch Specialist',
+                  phone: doc?.advisor_chat_whatsapp || '9102222448',
+                  avatar:
+                    'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80',
+                  status: 'Online',
+                },
+              ],
       },
       { headers: NO_CACHE_HEADERS }
     );
@@ -114,6 +128,17 @@ export async function GET() {
         advisor_chat_action_2: 'Request Master & Floor Plan Layouts',
         advisor_chat_whatsapp: '919022222448',
         advisor_chat_prefill: 'Hi, I would like to receive pre-launch early access updates',
+        advisor_chat_advisors: [
+          {
+            id: '1',
+            name: 'Priya Sharma',
+            role: 'Pre-Launch Specialist',
+            phone: '9102222448',
+            avatar:
+              'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80',
+            status: 'Online',
+          },
+        ],
       },
       { headers: NO_CACHE_HEADERS }
     );
@@ -174,6 +199,16 @@ export async function POST(req: NextRequest) {
     if (body.advisor_chat_action_2 !== undefined) payload.advisor_chat_action_2 = String(body.advisor_chat_action_2).trim();
     if (body.advisor_chat_whatsapp !== undefined) payload.advisor_chat_whatsapp = String(body.advisor_chat_whatsapp).trim();
     if (body.advisor_chat_prefill !== undefined) payload.advisor_chat_prefill = String(body.advisor_chat_prefill).trim();
+    if (body.advisor_chat_advisors !== undefined && Array.isArray(body.advisor_chat_advisors)) {
+      payload.advisor_chat_advisors = body.advisor_chat_advisors.map((item: any, idx: number) => ({
+        id: String(item.id || `adv_${Date.now()}_${idx}`),
+        name: String(item.name || 'Property Advisor').trim(),
+        role: String(item.role || 'Advisor').trim(),
+        phone: String(item.phone || '').trim(),
+        avatar: String(item.avatar || '').trim(),
+        status: String(item.status || 'Online').trim(),
+      }));
+    }
 
     const updated = await ThemeSetting.findOneAndUpdate(
       {},

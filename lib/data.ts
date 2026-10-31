@@ -164,6 +164,14 @@ export interface GlobalThemeSettings {
   advisor_chat_action_2?: string;
   advisor_chat_whatsapp?: string;
   advisor_chat_prefill?: string;
+  advisor_chat_advisors?: Array<{
+    id: string;
+    name: string;
+    role: string;
+    phone: string;
+    avatar: string;
+    status: string;
+  }>;
 }
 
 export async function getGlobalThemeSettings(): Promise<GlobalThemeSettings> {
@@ -200,6 +208,10 @@ export async function getGlobalThemeSettings(): Promise<GlobalThemeSettings> {
         advisor_chat_action_2: doc.advisor_chat_action_2 || 'Request Master & Floor Plan Layouts',
         advisor_chat_whatsapp: doc.advisor_chat_whatsapp || '919022222448',
         advisor_chat_prefill: doc.advisor_chat_prefill || 'Hi, I would like to receive pre-launch early access updates',
+        advisor_chat_advisors:
+          Array.isArray(doc.advisor_chat_advisors) && doc.advisor_chat_advisors.length > 0
+            ? doc.advisor_chat_advisors
+            : undefined,
       };
     }
   } catch {

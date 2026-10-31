@@ -3,6 +3,15 @@
 import React, { useState, useEffect } from 'react';
 import { X, Send, ArrowRight, MessageSquare, Sparkles } from 'lucide-react';
 
+export interface AdvisorItem {
+  id: string;
+  name: string;
+  role: string;
+  phone: string;
+  avatar: string;
+  status: string;
+}
+
 interface AdvisorChatProps {
   projectTitle?: string;
   whatsappNumber?: string;
@@ -27,6 +36,7 @@ export function PropertyAdvisorChat({
   const [action2, setAction2] = useState('Request Master & Floor Plan Layouts');
   const [liveWaNumber, setLiveWaNumber] = useState(whatsappNumber);
   const [message, setMessage] = useState('Hi, I would like to receive pre-launch early access updates');
+  const [advisors, setAdvisors] = useState<AdvisorItem[]>([]);
 
   useEffect(() => {
     // Fetch live theme & project info dynamically
@@ -49,6 +59,10 @@ export function PropertyAdvisorChat({
 
           if (data.advisor_chat_prefill) setMessage(data.advisor_chat_prefill);
 
+          if (Array.isArray(data.advisor_chat_advisors) && data.advisor_chat_advisors.length > 0) {
+            setAdvisors(data.advisor_chat_advisors);
+          }
+
           const phoneToUse = data.advisor_chat_whatsapp || data.navbar_phone;
           if (phoneToUse) {
             const clean = phoneToUse.replace(/\D/g, '');
@@ -68,9 +82,13 @@ export function PropertyAdvisorChat({
     }
   };
 
-  const handleSend = (customText?: string) => {
+  const handleSendToAdvisor = (advisor?: AdvisorItem, customText?: string) => {
     const textToSend = (customText || message).trim();
     if (!textToSend) return;
+
+    const phoneToUse = advisor?.phone || liveWaNumber;
+    const clean = phoneToUse.replace(/\D/g, '');
+    const finalPhone = clean.length >= 10 ? (clean.startsWith('91') ? clean : `91${clean}`) : clean;
 
     // Log the lead inquiry in background
     try {
@@ -79,22 +97,28 @@ export function PropertyAdvisorChat({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: 'Advisor Chat Visitor',
-          phone: liveWaNumber,
+          phone: finalPhone,
           email: 'advisor.chat@inquiry.com',
           configuration: 'All Units',
-          intent: 'WhatsApp Chat Inquiry',
+          intent: advisor ? `WhatsApp Chat with ${advisor.name}` : 'WhatsApp Chat Inquiry',
           source: `Property Advisor Chat Desk (${deskTitle})`,
-          notes: `Visitor Query: "${textToSend}"`,
+          notes: advisor
+            ? `Assigned Advisor: ${advisor.name} (${advisor.role}) - Query: "${textToSend}"`
+            : `Visitor Query: "${textToSend}"`,
         }),
       }).catch(() => {});
     } catch {}
 
-    // Open WhatsApp directly
+    const advisorGreeting = advisor ? `Hello ${advisor.name}, ` : '';
     const encoded = encodeURIComponent(
-      `${textToSend} for ${deskTitle}. Please share pricing, floor plans, and launch details.`
+      `${advisorGreeting}${textToSend} for ${deskTitle}. Please share pricing, floor plans, and launch details.`
     );
-    const targetUrl = `https://api.whatsapp.com/send?phone=${liveWaNumber}&text=${encoded}`;
+    const targetUrl = `https://api.whatsapp.com/send?phone=${finalPhone}&text=${encoded}`;
     window.open(targetUrl, '_blank');
+  };
+
+  const handleSend = (customText?: string) => {
+    handleSendToAdvisor(advisors[0], customText);
   };
 
   const handleQuickAction = (actionTitle: string) => {
@@ -162,6 +186,60 @@ export function PropertyAdvisorChat({
                 <span className="text-[10px] text-slate-400 font-medium">Just now</span>
               </div>
             </div>
+
+            {/* Multiple Advisors List */}
+            {advisors.length > 0 && (
+              <div className="space-y-1.5 pt-1">
+                <span className="text-[10.5px] font-bold text-slate-600 uppercase tracking-wider block px-1">
+                  Connect with an Advisor:
+                </span>
+                <div className="space-y-1.5">
+                  {advisors.map((adv) => (
+                    <button
+                      key={adv.id}
+                      type="button"
+                      onClick={() => handleSendToAdvisor(adv)}
+                      className="w-full p-2.5 rounded-xl border border-slate-200/90 bg-white hover:bg-emerald-50/60 hover:border-emerald-300 transition-all flex items-center justify-between gap-2.5 text-left group shadow-2xs cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="relative shrink-0">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={
+                              adv.avatar ||
+                              'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80'
+                            }
+                            alt={adv.name}
+                            className="w-9 h-9 rounded-full object-cover border border-emerald-500/40"
+                          />
+                          <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white" />
+                        </div>
+                        <div className="min-w-0">
+                          <h6 className="text-xs font-bold text-slate-900 truncate group-hover:text-emerald-700 transition-colors">
+                            {adv.name}
+                          </h6>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] text-slate-500 truncate">
+                              {adv.role || 'Property Specialist'}
+                            </span>
+                            {adv.status && (
+                              <span className="text-[9px] text-emerald-600 font-medium bg-emerald-50 px-1 py-0.2 rounded">
+                                {adv.status}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1 shrink-0 px-2.5 py-1 rounded-lg bg-emerald-600 text-white group-hover:bg-emerald-700 transition-colors text-[10.5px] font-semibold">
+                        <span>Chat</span>
+                        <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Quick Action Pill 1 */}
             {action1 && (

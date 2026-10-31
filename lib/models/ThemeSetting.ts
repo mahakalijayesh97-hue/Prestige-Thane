@@ -1,5 +1,14 @@
 import mongoose, { Schema, Model, Document } from 'mongoose';
 
+export interface IAdvisorItem {
+  id: string;
+  name: string;
+  role: string;
+  phone: string;
+  avatar: string;
+  status: string;
+}
+
 export interface IThemeSetting extends Document {
   primary_color: string;
   accent_color: string;
@@ -44,6 +53,7 @@ export interface IThemeSetting extends Document {
   advisor_chat_action_2: string;
   advisor_chat_whatsapp: string;
   advisor_chat_prefill: string;
+  advisor_chat_advisors: IAdvisorItem[];
 
   created_at: Date;
   updated_at: Date;
@@ -104,6 +114,23 @@ const ThemeSettingSchema = new Schema<IThemeSetting>(
     advisor_chat_prefill: {
       type: String,
       default: 'Hi, I would like to receive pre-launch early access updates',
+    },
+    advisor_chat_advisors: {
+      type: [
+        {
+          id: { type: String, default: '' },
+          name: { type: String, default: 'Property Advisor' },
+          role: { type: String, default: 'Pre-Launch Specialist' },
+          phone: { type: String, default: '9102222448' },
+          avatar: {
+            type: String,
+            default:
+              'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80',
+          },
+          status: { type: String, default: 'Online' },
+        },
+      ],
+      default: [],
     },
   },
   {
