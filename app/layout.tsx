@@ -7,7 +7,7 @@ import { getGlobalThemeSettings, getSettings } from '@/lib/data';
 import { GlobalThemeProvider } from '@/components/layout/global-theme-provider';
 import { ExternalScriptsLoader } from '@/components/layout/external-scripts';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ['latin'], display: 'swap' });
 
 export async function generateMetadata(): Promise<Metadata> {
   const [theme, settings] = await Promise.all([
@@ -80,10 +80,8 @@ export default async function RootLayout({
           </>
         ) : null}
 
-        {/* Preconnect & Preload Critical Resources */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link rel="preload" as="image" href="/assets/prestige-hero-bg.webp" type="image/webp" fetchPriority="high" />
+        {/* Preload Critical Image */}
+        <link rel="preload" as="image" href="/assets/prestige-hero-bg.webp" type="image/webp" />
         {cdnTags.map((tag, idx) => {
           if (tag.type === 'link') {
             return <link key={`admin-cdn-link-${idx}`} {...tag.props} />;

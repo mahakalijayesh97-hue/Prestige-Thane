@@ -39,38 +39,52 @@ export function PropertyAdvisorChat({
   const [advisors, setAdvisors] = useState<AdvisorItem[]>([]);
 
   useEffect(() => {
-    // Fetch live theme & project info dynamically
-    fetch('/api/settings/theme', { cache: 'no-store' })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data) {
-          if (data.advisor_chat_enabled !== undefined) setIsEnabled(data.advisor_chat_enabled);
-          if (data.advisor_chat_title) setDeskTitle(data.advisor_chat_title);
-          else if (data.project_title) setDeskTitle(`${data.project_title} Desk`);
+    const fetchSettings = () => {
+      // Fetch live theme & project info dynamically during idle time
+      fetch('/api/settings/theme', { cache: 'no-store' })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data) {
+            if (data.advisor_chat_enabled !== undefined) setIsEnabled(data.advisor_chat_enabled);
+            if (data.advisor_chat_title) setDeskTitle(data.advisor_chat_title);
+            else if (data.project_title) setDeskTitle(`${data.project_title} Desk`);
 
-          if (data.advisor_chat_subtitle) setSubtitle(data.advisor_chat_subtitle);
+            if (data.advisor_chat_subtitle) setSubtitle(data.advisor_chat_subtitle);
 
-          if (data.advisor_chat_welcome_title) setWelcomeTitle(data.advisor_chat_welcome_title);
-          else if (data.project_title) setWelcomeTitle(`Welcome to ${data.project_title}!`);
+            if (data.advisor_chat_welcome_title) setWelcomeTitle(data.advisor_chat_welcome_title);
+            else if (data.project_title) setWelcomeTitle(`Welcome to ${data.project_title}!`);
 
-          if (data.advisor_chat_welcome_msg) setWelcomeMsg(data.advisor_chat_welcome_msg);
-          if (data.advisor_chat_action_1) setAction1(data.advisor_chat_action_1);
-          if (data.advisor_chat_action_2) setAction2(data.advisor_chat_action_2);
+            if (data.advisor_chat_welcome_msg) setWelcomeMsg(data.advisor_chat_welcome_msg);
+            if (data.advisor_chat_action_1) setAction1(data.advisor_chat_action_1);
+            if (data.advisor_chat_action_2) setAction2(data.advisor_chat_action_2);
 
-          if (data.advisor_chat_prefill) setMessage(data.advisor_chat_prefill);
+            if (data.advisor_chat_prefill) setMessage(data.advisor_chat_prefill);
 
-          if (Array.isArray(data.advisor_chat_advisors) && data.advisor_chat_advisors.length > 0) {
-            setAdvisors(data.advisor_chat_advisors);
+            if (Array.isArray(data.advisor_chat_advisors) && data.advisor_chat_advisors.length > 0) {
+              setAdvisors(data.advisor_chat_advisors);
+            }
+
+            const phoneToUse = data.advisor_chat_whatsapp || data.navbar_phone;
+            if (phoneToUse) {
+              const clean = phoneToUse.replace(/\D/g, '');
+              if (clean.length >= 10) setLiveWaNumber(clean.startsWith('91') ? clean : `91${clean}`);
+            }
           }
+        })
+        .catch(() => {});
+    };
 
-          const phoneToUse = data.advisor_chat_whatsapp || data.navbar_phone;
-          if (phoneToUse) {
-            const clean = phoneToUse.replace(/\D/g, '');
-            if (clean.length >= 10) setLiveWaNumber(clean.startsWith('91') ? clean : `91${clean}`);
-          }
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      const id = (window as any).requestIdleCallback(fetchSettings, { timeout: 1500 });
+      return () => {
+        if (typeof window !== 'undefined' && 'cancelIdleCallback' in window) {
+          (window as any).cancelIdleCallback(id);
         }
-      })
-      .catch(() => {});
+      };
+    } else {
+      const timer = setTimeout(fetchSettings, 200);
+      return () => clearTimeout(timer);
+    }
   }, []);
 
   if (!isEnabled) return null;

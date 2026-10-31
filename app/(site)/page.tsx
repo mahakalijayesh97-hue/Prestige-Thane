@@ -40,12 +40,12 @@ export default async function HomePage() {
       {/* Homepage Content (rendered dynamically from Pages -> Home or instant fallback) */}
       <CustomPageRenderer content={renderedContent} className="w-full" />
 
-      {/* Published Page Sections */}
+      {/* Published Page Sections (Optimized with content-visibility for instant initial rendering) */}
       {otherPublishedPages.map((sec) => (
         <CustomPageRenderer
           key={sec.id}
           content={sec.content}
-          className="w-full"
+          className="w-full [content-visibility:auto] [contain-intrinsic-size:1px_800px]"
         />
       ))}
 

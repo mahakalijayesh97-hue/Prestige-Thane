@@ -132,7 +132,7 @@ export const PRESTIGE_HERO_TEMPLATE = {
 
               <!-- Prestige Logo -->
               <div class="prestige-logo-box">
-                <img src="/uploads/logo_1792837373812_Prestige_Group_Eagle_Emblem.webp" alt="Prestige Group" onerror="this.src='/assets/thumbs/prestige-entrance-gate.webp'" />
+                <img src="/uploads/logo_1792837373812_Prestige_Group_Eagle_Emblem.webp" alt="Prestige Group" width="48" height="48" decoding="async" onerror="this.src='/assets/thumbs/prestige-entrance-gate.webp'" />
               </div>
             </div>
 
