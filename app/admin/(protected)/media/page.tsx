@@ -3,7 +3,6 @@
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import Swal from 'sweetalert2';
-// @ts-expect-error SweetAlert2's stylesheet has no TypeScript declarations.
 import 'sweetalert2/dist/sweetalert2.min.css';
 import { logActivity } from '@/lib/admin';
 import {
