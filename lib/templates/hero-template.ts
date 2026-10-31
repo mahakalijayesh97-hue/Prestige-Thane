@@ -210,6 +210,9 @@ export const PRESTIGE_HERO_TEMPLATE = {
               </button>
             </div>
 
+            <!-- Form Feedback Message Banner -->
+            <div id="hero-form-message" class="hero-form-msg" style="display: none;"></div>
+
             <!-- Privacy Guarantee -->
             <p class="hero-privacy-note">
               🔒 No spam • We respect your time & privacy • Authorized First Team advisory
@@ -1057,6 +1060,39 @@ export const PRESTIGE_HERO_TEMPLATE = {
   padding-top: 0.25rem;
 }
 
+.hero-form-msg {
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+  margin-top: 0.5rem;
+  margin-bottom: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.25s ease;
+  animation: heroMsgFadeIn 0.2s ease;
+}
+
+@keyframes heroMsgFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.hero-form-msg.error {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+}
+
+.hero-form-msg.success {
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #16a34a;
+}
+
 /* ===== SAME-PAGE IMAGE LIGHTBOX MODAL STYLES ===== */
 .hero-lightbox-overlay {
   position: fixed;
@@ -1278,23 +1314,39 @@ export const PRESTIGE_HERO_TEMPLATE = {
     });
   });
 
-  // 2. Helper function to submit lead
+  // 2. Inline Form Notification Helper
+  function showFormMsg(msg, isError) {
+    const msgEl = document.getElementById('hero-form-message');
+    if (msgEl) {
+      msgEl.textContent = msg;
+      msgEl.className = 'hero-form-msg ' + (isError ? 'error' : 'success');
+      msgEl.style.display = 'flex';
+      setTimeout(function() {
+        if (msgEl) msgEl.style.display = 'none';
+      }, 6000);
+    } else {
+      alert(msg);
+    }
+  }
+
+  // 3. Helper function to submit lead
   async function submitLead(actionType) {
     const phoneInput = document.getElementById('lead-phone');
     const emailInput = document.getElementById('lead-email');
 
-    const phone = phoneInput ? phoneInput.value.replace(/\\D/g, '') : '';
-    const email = emailInput ? emailInput.value.trim() : '';
+    const rawPhone = phoneInput ? phoneInput.value : '';
+    const phone = rawPhone.replace(/\D/g, '');
+    const email = emailInput ? emailInput.value.trim().toLowerCase() : '';
 
     if (!phone || phone.length < 10) {
-      alert('Please enter a valid 10-digit mobile number.');
+      showFormMsg('Please enter a valid 10-digit mobile number.', true);
       if (phoneInput) phoneInput.focus();
       return;
     }
 
-    const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email || !emailRegex.test(email)) {
-      alert('Please enter a valid email address.');
+      showFormMsg('Please enter a valid email address.', true);
       if (emailInput) emailInput.focus();
       return;
     }
@@ -1320,8 +1372,9 @@ export const PRESTIGE_HERO_TEMPLATE = {
       const waNumber = '919022222448';
       const msg = encodeURIComponent('Hi Prestige Sales Desk, I would like to get complete project details, pricing, and floor plans for ' + selectedConfig + ' at Prestige Thane. My email is ' + email + '.');
       window.open('https://api.whatsapp.com/send?phone=' + waNumber + '&text=' + msg, '_blank');
+      showFormMsg('Redirecting to WhatsApp with official project details...', false);
     } else {
-      alert('Thank you! Your Site Visit for ' + selectedConfig + ' at Prestige Thane has been registered. Our Prestige representative will contact you shortly on +91 ' + phone + '.');
+      showFormMsg('Thank you! Your Site Visit for ' + selectedConfig + ' at Prestige Thane has been registered. Our Prestige representative will contact you shortly on +91 ' + phone + '.', false);
       if (phoneInput) phoneInput.value = '';
       if (emailInput) emailInput.value = '';
     }

@@ -5,7 +5,8 @@ import { filterHomePageSections, buildPageContent } from '@/lib/page-content';
 import { PRESTIGE_HERO_TEMPLATE } from '@/lib/templates/hero-template';
 import { Newspaper } from 'lucide-react';
 
-export const revalidate = 60;
+// Force live update
+export const revalidate = 0;
 
 export default async function HomePage() {
   const [banners, pages, posts, settings] = await Promise.all([

@@ -520,14 +520,14 @@ export const EARLY_ACCESS_MODAL_TEMPLATE = {
 
   async function handleEarlySubmit(actionType) {
     hideError();
-    var phone = phoneInput ? phoneInput.value.replace(/\\D/g, '') : '';
+    var phone = phoneInput ? phoneInput.value.replace(/\D/g, '') : '';
     if (!phone || phone.length < 10) {
       showError('Please enter a valid 10-digit mobile number.');
       return;
     }
 
-    var email = emailInput ? emailInput.value.trim() : '';
-    var emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
+    var email = emailInput ? emailInput.value.trim().toLowerCase() : '';
+    var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email || !emailRegex.test(email)) {
       showError('Please enter a valid email address.');
       return;
