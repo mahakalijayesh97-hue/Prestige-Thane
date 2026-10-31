@@ -90,45 +90,13 @@ export function GlobalThemeProvider({
 
   return (
     <>
-      <style
-        id="global-brand-theme-styles"
-        dangerouslySetInnerHTML={{
-          __html: `
-            :root {
-              ${primaryHsl ? `--primary: ${primaryHsl};` : ''}
-              ${accentHsl ? `--accent: ${accentHsl};` : ''}
-              ${textHsl ? `--foreground: ${textHsl};` : ''}
-              ${mutedTextHsl ? `--muted-foreground: ${mutedTextHsl};` : ''}
-              --brand-primary-hex: ${primaryColor};
-              --brand-accent-hex: ${accentColor};
-              --brand-text-hex: ${textColor};
-              --brand-heading-hex: ${headingColor};
-              --brand-muted-text-hex: ${mutedTextColor};
-              --brand-sitename-hex: ${siteNameColor};
-              --brand-subsitename-hex: ${subSiteNameColor};
-            }
-            body {
-              color: ${textColor};
-            }
-            h1, h2, h3, h4, h5, h6 {
-              color: ${headingColor};
-            }
-            .prose-content p, .prose-content li {
-              color: ${textColor};
-            }
-            .text-muted-foreground {
-              color: ${mutedTextColor} !important;
-            }
-            .site-brand-title {
-              color: ${siteNameColor} !important;
-            }
-            .sub-site-title {
-              color: ${subSiteNameColor} !important;
-            }
-            ${customCss}
-          `,
-        }}
-      />
+      {/* Only inject customCss dynamically if it has content (critical theme CSS is now server-rendered in layout.tsx) */}
+      {customCss ? (
+        <style
+          id="global-brand-custom-css"
+          dangerouslySetInnerHTML={{ __html: customCss }}
+        />
+      ) : null}
     </>
   );
 }

@@ -11,7 +11,8 @@ import type {
 } from './types';
 
 // In-memory server cache to minimize TTFB & database latency on Atlas queries
-const CACHE_TTL_MS = process.env.NODE_ENV === 'development' ? 2 * 1000 : 60 * 1000;
+// Dev: 10s TTL allows seeing changes quickly; prod: 60s for max performance
+const CACHE_TTL_MS = process.env.NODE_ENV === 'development' ? 10 * 1000 : 60 * 1000;
 let cacheSettings: { data: SiteSettings; expires: number } | null = null;
 let cacheNavItems: { data: NavItem[]; expires: number } | null = null;
 let cacheGlobalTheme: { data: GlobalThemeSettings; expires: number } | null = null;

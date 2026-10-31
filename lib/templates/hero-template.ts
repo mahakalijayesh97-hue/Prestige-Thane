@@ -262,6 +262,9 @@ export const PRESTIGE_HERO_TEMPLATE = {
   color: #1e293b;
   overflow: hidden;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  /* Reserve explicit min-height to prevent CLS as content loads */
+  min-height: 420px;
+  contain: layout style;
 }
 
 .hero-bg-overlay {
@@ -272,6 +275,8 @@ export const PRESTIGE_HERO_TEMPLATE = {
   background-position: center;
   opacity: 0.15;
   pointer-events: none;
+  /* Ensure bg image doesn't block layout */
+  will-change: opacity;
 }
 
 .hero-container {

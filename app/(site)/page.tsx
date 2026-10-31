@@ -5,8 +5,8 @@ import { filterHomePageSections, buildPageContent } from '@/lib/page-content';
 import { PRESTIGE_HERO_TEMPLATE } from '@/lib/templates/hero-template';
 import { Newspaper } from 'lucide-react';
 
-// Force live update
-export const revalidate = 0;
+// Revalidate every 60 seconds — serves cached content for speed while staying fresh
+export const revalidate = 60;
 
 export default async function HomePage() {
   const [banners, pages, posts, settings] = await Promise.all([
@@ -39,7 +39,7 @@ export default async function HomePage() {
   return (
     <div>
       {/* Homepage Content (rendered dynamically from Pages -> Home or instant fallback) */}
-      <CustomPageRenderer content={renderedContent} className="w-full" />
+      <CustomPageRenderer content={renderedContent} className="w-full" priority={true} />
 
       {/* Published Page Sections (Optimized with content-visibility for instant initial rendering) */}
       {otherPublishedPages.map((sec) => (

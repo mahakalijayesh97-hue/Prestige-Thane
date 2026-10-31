@@ -6,9 +6,15 @@ import { parsePageContent } from '@/lib/page-content';
 interface CustomPageRendererProps {
   content: string;
   className?: string;
+  /** Set true for above-the-fold content to run scripts eagerly instead of deferred */
+  priority?: boolean;
 }
 
-export function CustomPageRenderer({ content, className = 'prose-content max-w-none' }: CustomPageRendererProps) {
+export function CustomPageRenderer({
+  content,
+  className = 'prose-content max-w-none',
+  priority = false,
+}: CustomPageRendererProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { html, css, js } = parsePageContent(content);
 
@@ -26,19 +32,25 @@ export function CustomPageRenderer({ content, className = 'prose-content max-w-n
       }
     };
 
-    // Run non-critical page scripts during browser idle time to eliminate Total Blocking Time (TBT)
+    if (priority) {
+      // Above-the-fold (hero): run on next tick to avoid blocking FCP
+      const timer = setTimeout(runScript, 0);
+      return () => clearTimeout(timer);
+    }
+
+    // Below-the-fold: defer to idle time to eliminate Total Blocking Time (TBT)
     if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
-      const handle = (window as any).requestIdleCallback(runScript, { timeout: 1000 });
+      const handle = (window as any).requestIdleCallback(runScript, { timeout: 2000 });
       return () => {
         if (typeof window !== 'undefined' && 'cancelIdleCallback' in window) {
           (window as any).cancelIdleCallback(handle);
         }
       };
     } else {
-      const timer = setTimeout(runScript, 50);
+      const timer = setTimeout(runScript, 100);
       return () => clearTimeout(timer);
     }
-  }, [js]);
+  }, [js, priority]);
 
   return (
     <div className={className}>

@@ -41,7 +41,7 @@ export function PropertyAdvisorChat({
   useEffect(() => {
     const fetchSettings = () => {
       // Fetch live theme & project info dynamically during idle time
-      fetch('/api/settings/theme', { cache: 'no-store' })
+      fetch('/api/settings/theme', { cache: 'default' })
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
           if (data) {

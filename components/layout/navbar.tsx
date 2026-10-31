@@ -30,11 +30,12 @@ export async function Navbar() {
           {settings?.logo_url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={settings.logo_url}
+              src={settings.logo_url.replace(/\.png$/, '.webp')}
               alt={settings.site_name}
               width={32}
               height={32}
               fetchPriority="high"
+              decoding="async"
               className="h-8 w-8 object-contain"
             />
           ) : (
