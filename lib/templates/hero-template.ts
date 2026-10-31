@@ -62,25 +62,25 @@ export const PRESTIGE_HERO_TEMPLATE = {
 
           <div class="preview-grid">
             <div class="preview-thumb" data-index="0" title="Click to view Elevation render">
-              <img src="/assets/thumbs/prestige-entrance-gate.webp" alt="Elevation" width="76" height="56" loading="lazy" decoding="async" />
+              <img src="/assets/thumbs/prestige-entrance-gate.webp" alt="Elevation" width="76" height="56" loading="eager" fetchpriority="high" decoding="async" />
               <div class="thumb-overlay"></div>
               <span class="thumb-tag">Elevation</span>
               <span class="thumb-zoom-icon">🔍</span>
             </div>
             <div class="preview-thumb" data-index="1" title="Click to view Aqua Deck render">
-              <img src="/assets/thumbs/prestige-aerial-lifestyle.webp" alt="Aqua Deck" width="76" height="56" loading="lazy" decoding="async" />
+              <img src="/assets/thumbs/prestige-aerial-lifestyle.webp" alt="Aqua Deck" width="76" height="56" loading="eager" decoding="async" />
               <div class="thumb-overlay"></div>
               <span class="thumb-tag">Aqua Deck</span>
               <span class="thumb-zoom-icon">🔍</span>
             </div>
             <div class="preview-thumb" data-index="2" title="Click to view Clubhouse render">
-              <img src="/assets/thumbs/prestige-luxury-living-view.webp" alt="Clubhouse" width="76" height="56" loading="lazy" decoding="async" />
+              <img src="/assets/thumbs/prestige-luxury-living-view.webp" alt="Clubhouse" width="76" height="56" loading="eager" decoding="async" />
               <div class="thumb-overlay"></div>
               <span class="thumb-tag">Clubhouse</span>
               <span class="thumb-zoom-icon">🔍</span>
             </div>
             <div class="preview-thumb" data-index="3" title="Click to view Residences render">
-              <img src="/assets/thumbs/prestige-luxury-living-view.webp" alt="Residences" width="76" height="56" loading="lazy" decoding="async" />
+              <img src="/assets/thumbs/prestige-luxury-living-view.webp" alt="Residences" width="76" height="56" loading="eager" decoding="async" />
               <div class="thumb-overlay"></div>
               <span class="thumb-tag">Residences</span>
               <span class="thumb-zoom-icon">🔍</span>

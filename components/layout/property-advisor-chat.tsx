@@ -169,7 +169,7 @@ export function PropertyAdvisorChat({
                   {deskTitle}
                 </h4>
                 <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-300 animate-pulse" />
+                  <span className="w-2 h-2 rounded-full bg-emerald-300 ring-2 ring-emerald-400/50" />
                   <span className="text-[11px] text-emerald-100 font-medium">
                     {subtitle}
                   </span>
@@ -331,7 +331,7 @@ export function PropertyAdvisorChat({
           {/* Yellow/Amber Unread Notification Badge Dot */}
           {hasUnread && (
             <span
-              className="absolute top-0 right-0 w-3.5 h-3.5 bg-amber-400 rounded-full border-2 border-white shadow-xs animate-pulse"
+              className="absolute top-0 right-0 w-3.5 h-3.5 bg-amber-400 rounded-full border-2 border-white shadow-xs ring-2 ring-amber-400/50"
               title="New message from advisor"
             />
           )}

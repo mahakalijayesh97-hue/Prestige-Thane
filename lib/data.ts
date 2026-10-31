@@ -10,15 +10,37 @@ import type {
   ContactSubmission,
 } from './types';
 
+// In-memory server cache to minimize TTFB & database latency on Atlas queries
+const CACHE_TTL_MS = 60 * 1000;
+let cacheSettings: { data: SiteSettings; expires: number } | null = null;
+let cacheNavItems: { data: NavItem[]; expires: number } | null = null;
+let cacheGlobalTheme: { data: GlobalThemeSettings; expires: number } | null = null;
+let cachePublishedPages: { data: PageRow[]; expires: number } | null = null;
+
+export function invalidateDataCache() {
+  cacheSettings = null;
+  cacheNavItems = null;
+  cacheGlobalTheme = null;
+  cachePublishedPages = null;
+}
+
 export async function getSettings(): Promise<SiteSettings | null> {
+  const now = Date.now();
+  if (cacheSettings && cacheSettings.expires > now) {
+    return cacheSettings.data;
+  }
+
   try {
     const supabase = getSupabaseServer();
     const { data } = await supabase.from('site_settings').select('*').limit(1).maybeSingle();
-    if (data) return data as SiteSettings;
+    if (data) {
+      cacheSettings = { data: data as SiteSettings, expires: now + CACHE_TTL_MS };
+      return data as SiteSettings;
+    }
   } catch (err) {
     console.warn('getSettings fallback:', err);
   }
-  return {
+  const fallback = {
     id: 'prestige-default',
     site_name: 'Prestige',
     tagline: 'Luxury Living',
@@ -26,9 +48,16 @@ export async function getSettings(): Promise<SiteSettings | null> {
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   } as SiteSettings;
+  cacheSettings = { data: fallback, expires: now + CACHE_TTL_MS };
+  return fallback;
 }
 
 export async function getNavItems(): Promise<NavItem[]> {
+  const now = Date.now();
+  if (cacheNavItems && cacheNavItems.expires > now) {
+    return cacheNavItems.data;
+  }
+
   try {
     const { connectToDatabase } = await import('./mongodb');
     const { default: NavItemModel } = await import('./models/NavItem');
@@ -36,7 +65,7 @@ export async function getNavItems(): Promise<NavItem[]> {
     const count = await NavItemModel.countDocuments();
     if (count > 0) {
       const docs = await NavItemModel.find({ is_active: true }).sort({ sort_order: 1 }).lean();
-      return (docs || []).map((d) => ({
+      const items = (docs || []).map((d) => ({
         id: d.supabase_id || d._id.toString(),
         label: d.label,
         url: d.url,
@@ -47,6 +76,8 @@ export async function getNavItems(): Promise<NavItem[]> {
         created_at: d.created_at ? new Date(d.created_at).toISOString() : new Date().toISOString(),
         updated_at: d.updated_at ? new Date(d.updated_at).toISOString() : new Date().toISOString(),
       }));
+      cacheNavItems = { data: items, expires: now + CACHE_TTL_MS };
+      return items;
     }
   } catch (err) {
     console.warn('MongoDB nav items fallback:', err);
@@ -59,13 +90,16 @@ export async function getNavItems(): Promise<NavItem[]> {
       .select('*')
       .eq('is_active', true)
       .order('sort_order', { ascending: true });
-    if (data && data.length > 0) return data as NavItem[];
+    if (data && data.length > 0) {
+      cacheNavItems = { data: data as NavItem[], expires: now + CACHE_TTL_MS };
+      return data as NavItem[];
+    }
   } catch (err) {
     console.warn('Supabase nav items fallback:', err);
   }
 
   // Instant luxury navigation fallback for Vercel cold starts
-  return [
+  const fallback = [
     { id: 'nav-1', label: 'Overview', url: '#overview', parent_id: null, sort_order: 1, target: '_self', is_active: true, created_at: '', updated_at: '' },
     { id: 'nav-2', label: 'Pricing', url: '#pricing', parent_id: null, sort_order: 2, target: '_self', is_active: true, created_at: '', updated_at: '' },
     { id: 'nav-3', label: 'Amenities', url: '#amenities', parent_id: null, sort_order: 3, target: '_self', is_active: true, created_at: '', updated_at: '' },
@@ -74,6 +108,8 @@ export async function getNavItems(): Promise<NavItem[]> {
     { id: 'nav-6', label: 'Location', url: '#location', parent_id: null, sort_order: 6, target: '_self', is_active: true, created_at: '', updated_at: '' },
     { id: 'nav-7', label: 'FAQ', url: '#faq', parent_id: null, sort_order: 7, target: '_self', is_active: true, created_at: '', updated_at: '' },
   ];
+  cacheNavItems = { data: fallback, expires: now + CACHE_TTL_MS };
+  return fallback;
 }
 
 export async function getFooter(): Promise<{ columns: FooterColumn[]; links: FooterLink[] }> {
@@ -175,13 +211,18 @@ export interface GlobalThemeSettings {
 }
 
 export async function getGlobalThemeSettings(): Promise<GlobalThemeSettings> {
+  const now = Date.now();
+  if (cacheGlobalTheme && cacheGlobalTheme.expires > now) {
+    return cacheGlobalTheme.data;
+  }
+
   try {
     const { connectToDatabase } = await import('./mongodb');
     const { default: ThemeSetting } = await import('./models/ThemeSetting');
     await connectToDatabase();
     const doc = await ThemeSetting.findOne({}).lean() as any;
     if (doc) {
-      return {
+      const res: GlobalThemeSettings = {
         primary_color: doc.primary_color || '#2563eb',
         accent_color: doc.accent_color || '#f59e0b',
         text_color: doc.text_color || '#1e293b',
@@ -213,11 +254,13 @@ export async function getGlobalThemeSettings(): Promise<GlobalThemeSettings> {
             ? doc.advisor_chat_advisors
             : undefined,
       };
+      cacheGlobalTheme = { data: res, expires: now + CACHE_TTL_MS };
+      return res;
     }
   } catch {
     // Fallback if MongoDB is temporarily unreachable
   }
-  return {
+  const fallback: GlobalThemeSettings = {
     primary_color: '#2563eb',
     accent_color: '#f59e0b',
     text_color: '#1e293b',
@@ -245,6 +288,8 @@ export async function getGlobalThemeSettings(): Promise<GlobalThemeSettings> {
     advisor_chat_whatsapp: '919022222448',
     advisor_chat_prefill: 'Hi, I would like to receive pre-launch early access updates',
   };
+  cacheGlobalTheme = { data: fallback, expires: now + CACHE_TTL_MS };
+  return fallback;
 }
 
 export async function getBanners(): Promise<Banner[]> {
@@ -305,6 +350,11 @@ export async function getPublishedPage(slug: string): Promise<PageRow | null> {
 }
 
 export async function getPublishedPages(): Promise<PageRow[]> {
+  const now = Date.now();
+  if (cachePublishedPages && cachePublishedPages.expires > now) {
+    return cachePublishedPages.data;
+  }
+
   try {
     const { connectToDatabase } = await import('./mongodb');
     const { default: PageModel } = await import('./models/Page');
@@ -312,7 +362,7 @@ export async function getPublishedPages(): Promise<PageRow[]> {
     const count = await PageModel.countDocuments();
     if (count > 0) {
       const docs = await PageModel.find({ status: 'published' }).sort({ sort_order: 1 }).lean();
-      return (docs || []).map((doc) => ({
+      const pages = (docs || []).map((doc) => ({
         id: doc.supabase_id || doc._id.toString(),
         title: doc.title,
         slug: doc.slug,
@@ -327,6 +377,8 @@ export async function getPublishedPages(): Promise<PageRow[]> {
         created_at: doc.created_at ? new Date(doc.created_at).toISOString() : new Date().toISOString(),
         updated_at: doc.updated_at ? new Date(doc.updated_at).toISOString() : new Date().toISOString(),
       }));
+      cachePublishedPages = { data: pages, expires: now + CACHE_TTL_MS };
+      return pages;
     }
   } catch (err) {
     console.warn('MongoDB pages lookup fallback:', err);
@@ -339,7 +391,11 @@ export async function getPublishedPages(): Promise<PageRow[]> {
       .select('*')
       .eq('status', 'published')
       .order('sort_order', { ascending: true });
-    return (data as PageRow[]) ?? [];
+    const pages = (data as PageRow[]) ?? [];
+    if (pages.length > 0) {
+      cachePublishedPages = { data: pages, expires: now + CACHE_TTL_MS };
+    }
+    return pages;
   } catch (err) {
     console.warn('Supabase pages lookup fallback:', err);
     return [];
