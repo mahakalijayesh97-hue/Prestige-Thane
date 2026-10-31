@@ -30,9 +30,7 @@ const nav = [
   { href: '/admin/forms', label: 'Forms & Modals', icon: FormInput },
   { href: '/admin/nav', label: 'Navbar', icon: MenuIcon },
   { href: '/admin/footer', label: 'Footer', icon: FooterIcon },
-  { href: '/admin/banners', label: 'Banners', icon: ImageIcon },
   { href: '/admin/media', label: 'Media', icon: ImageIcon },
-  { href: '/admin/blog', label: 'Blog', icon: Newspaper },
   { href: '/admin/contact', label: 'Messages', icon: Mail },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];
