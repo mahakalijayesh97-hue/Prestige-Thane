@@ -128,7 +128,7 @@ function LoginFormContent() {
 
   const { user, setUser } = useAuth();
   const [mobileNumber, setMobileNumber] = useState('');
-  const [email, setEmail] = useState('admin@prestige.com');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -477,18 +477,18 @@ function LoginFormContent() {
               <Label htmlFor="email" className="text-xs font-semibold text-slate-700">
                 Email Address
               </Label>
-              <div className="relative flex items-center rounded-xl border border-slate-200 bg-white shadow-sm transition-all focus-within:border-[#C59137] focus-within:ring-2 focus-within:ring-[#C59137]/20">
-                <div className="pl-3 text-slate-400">
+              <div className="relative flex items-center rounded-xl border border-slate-200 bg-white shadow-xs transition-all focus-within:border-[#C59137] focus-within:ring-2 focus-within:ring-[#C59137]/20">
+                <div className="pl-3.5 text-slate-400 pointer-events-none">
                   <Mail className="h-4 w-4" />
                 </div>
-                <Input
+                <input
                   id="email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="your.email@example.com"
                   required
-                  className="border-0 bg-transparent px-3 py-2 text-xs focus-visible:ring-0 shadow-none"
+                  className="w-full border-0 bg-transparent px-3 py-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-0 focus-visible:outline-none shadow-none"
                   disabled={loading}
                 />
               </div>
@@ -499,24 +499,24 @@ function LoginFormContent() {
               <Label htmlFor="password" className="text-xs font-semibold text-slate-700">
                 Password
               </Label>
-              <div className="relative flex items-center rounded-xl border border-slate-200 bg-white shadow-sm transition-all focus-within:border-[#C59137] focus-within:ring-2 focus-within:ring-[#C59137]/20">
-                <div className="pl-3 text-slate-400">
+              <div className="relative flex items-center rounded-xl border border-slate-200 bg-white shadow-xs transition-all focus-within:border-[#C59137] focus-within:ring-2 focus-within:ring-[#C59137]/20">
+                <div className="pl-3.5 text-slate-400 pointer-events-none">
                   <Lock className="h-4 w-4" />
                 </div>
-                <Input
+                <input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
                   required
-                  className="border-0 bg-transparent px-3 pr-10 py-2 text-xs focus-visible:ring-0 shadow-none"
+                  className="w-full border-0 bg-transparent px-3 pr-10 py-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-0 focus-visible:outline-none shadow-none"
                   disabled={loading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 text-slate-400 hover:text-slate-600 transition-colors focus:outline-none"
+                  className="absolute right-3.5 text-slate-400 hover:text-slate-600 transition-colors focus:outline-none"
                   tabIndex={-1}
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >

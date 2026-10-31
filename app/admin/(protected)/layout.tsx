@@ -1,7 +1,12 @@
-export const dynamic = 'force-dynamic';
+'use client';
 
+import dynamic from 'next/dynamic';
 import { AdminGuard } from '@/components/auth/admin-guard';
-import { AdminShell } from '@/components/layout/admin-shell';
+
+const AdminShell = dynamic(
+  () => import('@/components/layout/admin-shell').then((mod) => mod.AdminShell),
+  { ssr: false }
+);
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (

@@ -45,9 +45,11 @@ function getFileExtension(url: string, name?: string): string {
   return match ? match[1].toUpperCase() : 'IMG';
 }
 
+let cachedMediaList: Media[] | null = null;
+
 export default function AdminMediaPage() {
-  const [rows, setRows] = useState<Media[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [rows, setRows] = useState<Media[]>(() => cachedMediaList || []);
+  const [loading, setLoading] = useState(() => !cachedMediaList);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [copied, setCopied] = useState<string | null>(null);
@@ -169,12 +171,14 @@ export default function AdminMediaPage() {
   }, []);
 
   async function load() {
-    setLoading(true);
+    if (!cachedMediaList) setLoading(true);
     try {
       const res = await fetch('/api/media', { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
-        setRows(data.items || []);
+        const items = data.items || [];
+        cachedMediaList = items;
+        setRows(items);
       }
     } catch (err) {
       console.error('Failed to load media:', err);

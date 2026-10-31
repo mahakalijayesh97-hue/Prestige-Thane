@@ -41,18 +41,22 @@ interface LinkItem {
 
 type TabType = 'html' | 'css' | 'js' | 'preview';
 
+let cachedFooterCols: Col[] | null = null;
+let cachedFooterLinks: LinkItem[] | null = null;
+let cachedFooterCustom: any = null;
+
 export default function AdminFooterPage() {
-  const [columns, setColumns] = useState<Col[]>([]);
-  const [links, setLinks] = useState<LinkItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [columns, setColumns] = useState<Col[]>(() => cachedFooterCols || []);
+  const [links, setLinks] = useState<LinkItem[]>(() => cachedFooterLinks || []);
+  const [loading, setLoading] = useState(() => !cachedFooterCols);
   const [newCol, setNewCol] = useState('');
 
   // Custom Footer State (Image, HTML, CSS, JS)
-  const [footerImage, setFooterImage] = useState('');
-  const [customHtml, setCustomHtml] = useState('');
-  const [customCss, setCustomCss] = useState('');
-  const [customJs, setCustomJs] = useState('');
-  const [showDefaultLinks, setShowDefaultLinks] = useState(true);
+  const [footerImage, setFooterImage] = useState(() => cachedFooterCustom?.footer_image || '');
+  const [customHtml, setCustomHtml] = useState(() => cachedFooterCustom?.custom_html || '');
+  const [customCss, setCustomCss] = useState(() => cachedFooterCustom?.custom_css || '');
+  const [customJs, setCustomJs] = useState(() => cachedFooterCustom?.custom_js || '');
+  const [showDefaultLinks, setShowDefaultLinks] = useState(() => cachedFooterCustom ? cachedFooterCustom.show_default_links !== false : true);
   const [activeTab, setActiveTab] = useState<TabType>('html');
   const [savingCustom, setSavingCustom] = useState(false);
   const [savedNotice, setSavedNotice] = useState(false);
@@ -63,7 +67,7 @@ export default function AdminFooterPage() {
   }, []);
 
   async function load() {
-    setLoading(true);
+    if (!cachedFooterCols) setLoading(true);
     const supabase = getSupabaseBrowser();
     const [c, l] = await Promise.all([
       supabase
@@ -75,8 +79,12 @@ export default function AdminFooterPage() {
         .select('*')
         .order('sort_order', { ascending: true }),
     ]);
-    setColumns((c.data as Col[]) ?? []);
-    setLinks((l.data as LinkItem[]) ?? []);
+    const cols = (c.data as Col[]) ?? [];
+    const lnks = (l.data as LinkItem[]) ?? [];
+    cachedFooterCols = cols;
+    cachedFooterLinks = lnks;
+    setColumns(cols);
+    setLinks(lnks);
     setLoading(false);
   }
 
@@ -85,6 +93,7 @@ export default function AdminFooterPage() {
       const res = await fetch('/api/footer/custom');
       if (res.ok) {
         const data = await res.json();
+        cachedFooterCustom = data;
         setFooterImage(data.footer_image || '');
         setCustomHtml(data.custom_html || '');
         setCustomCss(data.custom_css || '');

@@ -42,22 +42,25 @@ async function syncFromSupabase() {
   }
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     await connectToDatabase();
 
-    let list = await PageModel.find({}).sort({ sort_order: 1, created_at: -1 }).lean();
+    const includeContent = req.nextUrl.searchParams.get('full') === '1' || req.nextUrl.searchParams.get('full') === 'true';
+    const projection = includeContent ? {} : { content: 0 };
+
+    let list: any[] = (await PageModel.find({}, projection).sort({ sort_order: 1, created_at: -1 }).lean()) as any[];
     if (list.length === 0) {
       await syncFromSupabase();
-      list = await PageModel.find({}).sort({ sort_order: 1, created_at: -1 }).lean();
+      list = (await PageModel.find({}, projection).sort({ sort_order: 1, created_at: -1 }).lean()) as any[];
     }
-    const formatted = list.map((item) => ({
+    const formatted = list.map((item: any) => ({
       id: item.supabase_id || item._id.toString(),
       _id: item._id.toString(),
       title: item.title,
       slug: item.slug,
       status: item.status,
-      content: item.content,
+      ...(includeContent ? { content: item.content } : {}),
       seo_title: item.seo_title,
       meta_description: item.meta_description,
       meta_keywords: item.meta_keywords,

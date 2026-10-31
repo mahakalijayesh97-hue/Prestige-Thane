@@ -74,9 +74,12 @@ const GENERAL_PRESETS = [
   { label: 'Contact', url: '/contact' },
 ];
 
+let cachedNavItems: NavRow[] | null = null;
+let cachedNavPages: AvailablePage[] | null = null;
+
 export default function AdminNavPage() {
-  const [items, setItems] = useState<NavRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState<NavRow[]>(() => cachedNavItems || []);
+  const [loading, setLoading] = useState(() => !cachedNavItems);
   const [adding, setAdding] = useState(false);
   const [newLabel, setNewLabel] = useState('');
   const [newUrl, setNewUrl] = useState('/');
@@ -90,7 +93,7 @@ export default function AdminNavPage() {
   const [siteName, setSiteName] = useState('Prestige Thane');
   const [subSiteName, setSubSiteName] = useState('Luxury Residences');
   const [logoUrl, setLogoUrl] = useState('/uploads/logo_1792837373812_Prestige_Group_Eagle_Emblem.png');
-  const [pages, setPages] = useState<AvailablePage[]>([]);
+  const [pages, setPages] = useState<AvailablePage[]>(() => cachedNavPages || []);
 
   // Dynamic Header Right-Side Action & Phone states
   const [navbarPhone, setNavbarPhone] = useState('+91 90222 22448');
@@ -105,13 +108,15 @@ export default function AdminNavPage() {
   }, []);
 
   async function loadData() {
-    setLoading(true);
+    if (!cachedNavItems) setLoading(true);
     try {
       // 1. Load Nav Items from API
       const navRes = await fetch('/api/nav', { cache: 'no-store' });
       if (navRes.ok) {
         const json = await navRes.json();
-        setItems(json.items || []);
+        const list = json.items || [];
+        cachedNavItems = list;
+        setItems(list);
       }
 
       // 2. Load Brand Settings for Preview
@@ -133,7 +138,9 @@ export default function AdminNavPage() {
         const pagesRes = await fetch('/api/pages', { cache: 'no-store' });
         if (pagesRes.ok) {
           const pagesJson = await pagesRes.json();
-          setPages(pagesJson.pages || []);
+          const pList = pagesJson.pages || [];
+          cachedNavPages = pList;
+          setPages(pList);
         }
       } catch {}
     } catch (err) {

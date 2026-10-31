@@ -41,10 +41,12 @@ interface FormRow {
   updated_at: string;
 }
 
+let cachedFormsList: FormRow[] | null = null;
+
 export default function FormsAdminPage() {
   const router = useRouter();
-  const [forms, setForms] = useState<FormRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [forms, setForms] = useState<FormRow[]>(() => cachedFormsList || []);
+  const [loading, setLoading] = useState(() => !cachedFormsList);
   const [creating, setCreating] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newSlug, setNewSlug] = useState('');
@@ -55,11 +57,14 @@ export default function FormsAdminPage() {
   }, []);
 
   async function loadForms() {
+    if (!cachedFormsList) setLoading(true);
     try {
       const res = await fetch('/api/forms', { cache: 'no-store' });
       if (res.ok) {
         const json = await res.json();
-        setForms(json.forms || []);
+        const list = json.forms || [];
+        cachedFormsList = list;
+        setForms(list);
       }
     } catch (err) {
       console.error('Failed to load forms:', err);

@@ -114,13 +114,19 @@ function PrestigeShowcaseLogo() {
   );
 }
 
+let cachedDashboardStats: Stats | null = null;
+let cachedDashboardRecent: RecentItem[] = [];
+let cachedStatusData: { name: string; value: number }[] = [];
+let cachedBarData: { name: string; value: number }[] = [];
+let cachedProjectInfo: ProjectInfo = DEFAULT_PROJECT_INFO;
+
 export default function DashboardClient() {
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [recent, setRecent] = useState<RecentItem[]>([]);
-  const [statusData, setStatusData] = useState<{ name: string; value: number }[]>([]);
-  const [barData, setBarData] = useState<{ name: string; value: number }[]>([]);
-  const [projectInfo, setProjectInfo] = useState<ProjectInfo>(DEFAULT_PROJECT_INFO);
-  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<Stats | null>(() => cachedDashboardStats);
+  const [recent, setRecent] = useState<RecentItem[]>(() => cachedDashboardRecent);
+  const [statusData, setStatusData] = useState<{ name: string; value: number }[]>(() => cachedStatusData);
+  const [barData, setBarData] = useState<{ name: string; value: number }[]>(() => cachedBarData);
+  const [projectInfo, setProjectInfo] = useState<ProjectInfo>(() => cachedProjectInfo);
+  const [loading, setLoading] = useState(() => !cachedDashboardStats);
 
   useEffect(() => {
     const supabase = getSupabaseBrowser();
@@ -167,27 +173,35 @@ export default function DashboardClient() {
       const posts = (bp.data as { status: string }[]) ?? [];
       const subs = (cs.data as { is_read: boolean }[]) ?? [];
 
-      setStats({
+      const newStats = {
         pages: pages.length,
         posts: posts.length,
         messages: subs.length,
         unread: subs.filter((s) => !s.is_read).length,
-      });
+      };
+      cachedDashboardStats = newStats;
+      setStats(newStats);
 
-      setStatusData([
+      const newStatus = [
         { name: 'Published pages', value: pages.filter((x) => x.status === 'published').length },
         { name: 'Draft pages', value: pages.filter((x) => x.status === 'draft').length },
         { name: 'Published posts', value: posts.filter((x) => x.status === 'published').length },
         { name: 'Draft posts', value: posts.filter((x) => x.status === 'draft').length },
-      ]);
+      ];
+      cachedStatusData = newStatus;
+      setStatusData(newStatus);
 
-      setBarData([
+      const newBars = [
         { name: 'Pages', value: pages.length },
         { name: 'Posts', value: posts.length },
         { name: 'Messages', value: subs.length },
-      ]);
+      ];
+      cachedBarData = newBars;
+      setBarData(newBars);
 
-      setRecent((logs.data as RecentItem[]) ?? []);
+      const recentItems = (logs.data as RecentItem[]) ?? [];
+      cachedDashboardRecent = recentItems;
+      setRecent(recentItems);
       setLoading(false);
     })();
   }, []);

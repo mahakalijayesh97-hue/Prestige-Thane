@@ -19,9 +19,11 @@ interface Row {
   updated_at: string;
 }
 
+let cachedPagesList: Row[] | null = null;
+
 export default function AdminPagesPage() {
-  const [rows, setRows] = useState<Row[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [rows, setRows] = useState<Row[]>(() => cachedPagesList || []);
+  const [loading, setLoading] = useState(() => !cachedPagesList);
   const [filter, setFilter] = useState<'all' | 'published' | 'draft'>('all');
 
   useEffect(() => {
@@ -29,12 +31,13 @@ export default function AdminPagesPage() {
   }, []);
 
   async function load() {
-    setLoading(true);
+    if (!cachedPagesList) setLoading(true);
     try {
       const res = await fetch('/api/pages', { cache: 'no-store' });
       if (res.ok) {
         const json = await res.json();
         if (json.pages) {
+          cachedPagesList = json.pages;
           setRows(json.pages);
           setLoading(false);
           return;
@@ -45,7 +48,10 @@ export default function AdminPagesPage() {
     }
     const supabase = getSupabaseBrowser();
     const { data } = await supabase.from('pages').select('*').order('sort_order', { ascending: true });
-    setRows((data as Row[]) ?? []);
+    if (data) {
+      cachedPagesList = data as Row[];
+      setRows(data as Row[]);
+    }
     setLoading(false);
   }
 

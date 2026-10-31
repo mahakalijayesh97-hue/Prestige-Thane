@@ -34,11 +34,11 @@ export const FLOOR_PLAN_SECTION_TEMPLATE = {
 
     <!-- Configuration Filter Tabs -->
     <div class="fp-tabs-wrap">
-      <button type="button" class="fp-tab-btn active" data-tab="all">All Layouts</button>
-      <button type="button" class="fp-tab-btn" data-tab="2bhk">2 BHK (700 – 750 sq.ft.)</button>
-      <button type="button" class="fp-tab-btn" data-tab="3bhk">3 BHK (1,050 – 1,180 sq.ft.)</button>
-      <button type="button" class="fp-tab-btn" data-tab="4bhk">4 BHK (1,500 – 1,650 sq.ft.)</button>
-      <button type="button" class="fp-tab-btn" data-tab="jodi">Jodi Units (1,400 – 2,200 sq.ft.)</button>
+      <button type="button" class="fp-tab-btn active" data-tab="all" onclick="if(window.filterFloorPlans)window.filterFloorPlans('all',this)">All Layouts</button>
+      <button type="button" class="fp-tab-btn" data-tab="2bhk" onclick="if(window.filterFloorPlans)window.filterFloorPlans('2bhk',this)">2 BHK (700 – 750 sq.ft.)</button>
+      <button type="button" class="fp-tab-btn" data-tab="3bhk" onclick="if(window.filterFloorPlans)window.filterFloorPlans('3bhk',this)">3 BHK (1,050 – 1,180 sq.ft.)</button>
+      <button type="button" class="fp-tab-btn" data-tab="4bhk" onclick="if(window.filterFloorPlans)window.filterFloorPlans('4bhk',this)">4 BHK (1,500 – 1,650 sq.ft.)</button>
+      <button type="button" class="fp-tab-btn" data-tab="jodi" onclick="if(window.filterFloorPlans)window.filterFloorPlans('jodi',this)">Jodi Units (1,400 – 2,200 sq.ft.)</button>
     </div>
 
     <!-- Floor Plan Cards Grid -->
@@ -1372,36 +1372,72 @@ export const FLOOR_PLAN_SECTION_TEMPLATE = {
 
   js: `// Filter Tabs & Blueprint Unlock Handler
 (function() {
-  // 1. Tab Filtering
-  const tabBtns = document.querySelectorAll('.fp-tab-btn');
-  const cards = document.querySelectorAll('.fp-card');
+  // Global filter function available to onclick and event listeners
+  window.filterFloorPlans = function(selectedTab, clickedBtn) {
+    try {
+      var section = clickedBtn ? clickedBtn.closest('#floor-plans') : document.getElementById('floor-plans');
+      var root = section || document;
+      var btns = root.querySelectorAll('.fp-tab-btn');
+      var cards = root.querySelectorAll('.fp-card');
 
-  tabBtns.forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      tabBtns.forEach(b => b.classList.remove('active'));
-      this.classList.add('active');
+      btns.forEach(function(b) {
+        b.classList.remove('active');
+      });
 
-      const selectedTab = this.getAttribute('data-tab');
+      if (clickedBtn) {
+        clickedBtn.classList.add('active');
+      } else {
+        var activeBtn = root.querySelector('.fp-tab-btn[data-tab="' + selectedTab + '"]');
+        if (activeBtn) activeBtn.classList.add('active');
+      }
 
       cards.forEach(function(card) {
-        if (selectedTab === 'all' || card.getAttribute('data-category') === selectedTab) {
-          card.style.display = 'flex';
+        var category = card.getAttribute('data-category');
+        if (selectedTab === 'all' || category === selectedTab) {
+          card.style.setProperty('display', 'flex', 'important');
         } else {
-          card.style.display = 'none';
+          card.style.setProperty('display', 'none', 'important');
         }
       });
+    } catch (e) {
+      console.warn('Filter floor plans error:', e);
+    }
+  };
+
+  // Event Delegation on Document for Tabs
+  if (!window._fpTabsDelegated) {
+    window._fpTabsDelegated = true;
+    document.addEventListener('click', function(e) {
+      var btn = e.target && e.target.closest ? e.target.closest('.fp-tab-btn') : null;
+      if (btn) {
+        e.preventDefault();
+        var tab = btn.getAttribute('data-tab');
+        if (tab && window.filterFloorPlans) {
+          window.filterFloorPlans(tab, btn);
+        }
+        return;
+      }
+
+      var overlay = e.target && e.target.closest ? e.target.closest('.bp-locked-overlay') : null;
+      if (overlay) {
+        e.preventDefault();
+        var planId = overlay.getAttribute('data-plan-id');
+        var planTitle = overlay.getAttribute('data-plan-title');
+        if (typeof window.openEarlyAccessModal === 'function') {
+          window.openEarlyAccessModal('unlock_floor_plan_' + planId, 'Unlock Confidential Floor Plan: ' + planTitle);
+        }
+      }
     });
-  });
+  }
 
-  // 2. Click-to-Unlock Blueprint
-  const lockedOverlays = document.querySelectorAll('.bp-locked-overlay');
-  lockedOverlays.forEach(function(overlay) {
-    overlay.addEventListener('click', function() {
-      const planId = this.getAttribute('data-plan-id');
-      const planTitle = this.getAttribute('data-plan-title');
-
-      if (typeof window.openEarlyAccessModal === 'function') {
-        window.openEarlyAccessModal('unlock_floor_plan_' + planId, 'Unlock Confidential Floor Plan: ' + planTitle);
+  // Initial tab attachment
+  const tabBtns = document.querySelectorAll('.fp-tab-btn');
+  tabBtns.forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      var tab = this.getAttribute('data-tab');
+      if (tab && window.filterFloorPlans) {
+        window.filterFloorPlans(tab, this);
       }
     });
   });
