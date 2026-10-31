@@ -339,40 +339,50 @@ export const GALLERY_SECTION_TEMPLATE = {
 
   <!-- Full-Screen Lightbox Modal -->
   <div id="gallery-fullscreen-modal" class="gallery-lightbox" style="display: none;">
-    <button type="button" class="gallery-modal-close-btn" id="gallery-modal-close-btn" aria-label="Close Lightbox">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-    </button>
-
-    <button type="button" class="lightbox-nav-btn prev" id="gallery-modal-prev-btn" aria-label="Previous Image">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-    </button>
-
-    <button type="button" class="lightbox-nav-btn next" id="gallery-modal-next-btn" aria-label="Next Image">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-    </button>
-
-    <div class="lightbox-content-box" id="lightbox-content-box">
-      <div class="lightbox-img-frame">
-        <img id="gallery-modal-active-img" src="" alt="Active Render" class="gallery-modal-active-img" />
-        <div class="gallery-modal-tag-overlay" id="gallery-modal-tag-overlay">Grand Landmark Gate</div>
-      </div>
-
-      <div class="lightbox-caption-bar">
-        <div class="lightbox-caption-left">
-          <div class="lightbox-meta-row">
+    <!-- TOP BAR -->
+    <div class="gallery-lightbox-topbar">
+      <div class="gallery-lightbox-meta">
+        <span class="gallery-modal-tag-overlay" id="gallery-modal-tag-overlay">Grand Landmark Gate</span>
+        <div class="gallery-lightbox-titles">
+          <h4 class="gallery-modal-title" id="gallery-modal-title">Grand Entrance Gate &amp; Iconic Sunset Towers</h4>
+          <div class="gallery-lightbox-sub">
             <span class="gallery-modal-cat" id="gallery-modal-cat">Elevation &amp; Entrance</span>
             <span class="lightbox-sep">•</span>
             <span class="gallery-modal-counter" id="gallery-modal-counter">Render 1 of 9</span>
           </div>
-          <h4 class="gallery-modal-title" id="gallery-modal-title">Grand Entrance Gate &amp; Iconic Sunset Towers</h4>
-          <p class="gallery-modal-desc" id="gallery-modal-desc">Iconic monumental gatehouse with lush green landscape boulevard.</p>
         </div>
+      </div>
 
+      <div class="gallery-lightbox-actions">
         <a href="#early-access" class="gallery-modal-enquire-btn" id="gallery-modal-enquire-btn" data-modal="early-access" data-modal-title="Inquire About Architectural Render" data-modal-source="lightbox_render_enquire">
           <span>Enquire Now</span>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
         </a>
+        <button type="button" class="gallery-modal-close-btn" id="gallery-modal-close-btn" aria-label="Close Lightbox" title="Close (Esc)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
       </div>
+    </div>
+
+    <!-- MAIN VIEWPORT AREA -->
+    <div class="gallery-lightbox-stage">
+      <button type="button" class="lightbox-nav-btn prev" id="gallery-modal-prev-btn" aria-label="Previous Image" title="Previous (Left Arrow)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+
+      <div class="lightbox-img-frame" id="lightbox-img-frame">
+        <img id="gallery-modal-active-img" src="" alt="Active Render" class="gallery-modal-active-img" />
+      </div>
+
+      <button type="button" class="lightbox-nav-btn next" id="gallery-modal-next-btn" aria-label="Next Image" title="Next (Right Arrow)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+
+    <!-- BOTTOM BAR WITH DESCRIPTION & THUMBNAILS -->
+    <div class="gallery-lightbox-bottombar">
+      <p class="gallery-modal-desc" id="gallery-modal-desc">Iconic monumental gatehouse with lush green landscape boulevard.</p>
+      <div class="gallery-lightbox-strip" id="gallery-lightbox-strip"></div>
     </div>
   </div>
 </section>`,
@@ -822,240 +832,144 @@ export const GALLERY_SECTION_TEMPLATE = {
 }
 
 /* ========================================================================= */
-/* LIGHTBOX MODAL */
+/* LIGHTBOX MODAL (LUXURY IMMERSIVE FULLSCREEN VIEWER) */
 /* ========================================================================= */
 .gallery-lightbox {
   position: fixed;
   inset: 0;
-  z-index: 9999;
-  background-color: rgba(0, 0, 0, 0.95);
-  backdrop-filter: blur(12px);
+  z-index: 9999999;
+  background: rgba(8, 12, 22, 0.96);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 0;
+  margin: 0;
   user-select: none;
-}
-
-.gallery-modal-close-btn {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  z-index: 20;
-  width: 2.75rem;
-  height: 2.75rem;
-  border-radius: 9999px;
-  background-color: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.gallery-modal-close-btn:hover {
-  background-color: rgba(255, 255, 255, 0.3);
-}
-
-.gallery-modal-close-btn svg {
-  width: 1.5rem;
-  height: 1.5rem;
-}
-
-.lightbox-nav-btn {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 20;
-  width: 3rem;
-  height: 3rem;
-  border-radius: 9999px;
-  background-color: rgba(0, 0, 0, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
-  transition: all 0.2s ease;
-}
-
-.lightbox-nav-btn.prev {
-  left: 1rem;
-}
-
-.lightbox-nav-btn.next {
-  right: 1rem;
-}
-
-@media (min-width: 640px) {
-  .lightbox-nav-btn.prev {
-    left: 2rem;
-  }
-  .lightbox-nav-btn.next {
-    right: 2rem;
-  }
-}
-
-.lightbox-nav-btn:hover {
-  background-color: #d97706;
-}
-
-.lightbox-nav-btn svg {
-  width: 1.5rem;
-  height: 1.5rem;
-}
-
-.lightbox-content-box {
-  max-width: 64rem;
-  width: 100%;
-  max-height: 92vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-.lightbox-img-frame {
-  position: relative;
-  width: 100%;
-  max-height: 70vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 1rem;
   overflow: hidden;
-  background-color: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  animation: galleryModalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.gallery-modal-active-img {
-  max-height: 70vh;
-  width: auto;
-  max-width: 100%;
-  object-fit: contain;
-  border-radius: 0.75rem;
+@keyframes galleryModalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
-.gallery-modal-tag-overlay {
-  position: absolute;
-  top: 0.75rem;
-  left: 0.75rem;
-  background-color: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(8px);
-  padding: 0.35rem 0.85rem;
-  border-radius: 9999px;
-  border: 1px solid rgba(251, 191, 36, 0.4);
-  color: #fde047;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
-.lightbox-caption-bar {
-  margin-top: 1rem;
-  width: 100%;
+/* TOP BAR */
+.gallery-lightbox-topbar {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0 0.5rem;
-  color: #ffffff;
+  padding: 0.85rem 1.5rem;
+  background: rgba(15, 23, 42, 0.85);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 20;
 }
 
-@media (min-width: 640px) {
-  .lightbox-caption-bar {
-    flex-direction: row;
-  }
-}
-
-.lightbox-caption-left {
-  text-align: center;
-}
-
-@media (min-width: 640px) {
-  .lightbox-caption-left {
-    text-align: left;
-  }
-}
-
-.lightbox-meta-row {
+.gallery-lightbox-meta {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  margin-bottom: 0.25rem;
+  gap: 0.85rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.gallery-modal-tag-overlay {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(217, 119, 6, 0.15));
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  color: #fbbf24;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.gallery-lightbox-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.gallery-modal-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.01em;
 }
 
 @media (min-width: 640px) {
-  .lightbox-meta-row {
-    justify-content: flex-start;
+  .gallery-modal-title {
+    font-size: 1.15rem;
   }
+}
+
+.gallery-lightbox-sub {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
 }
 
 .gallery-modal-cat {
   font-size: 0.75rem;
-  font-weight: 700;
-  color: #fbbf24;
-  letter-spacing: 0.05em;
+  font-weight: 600;
+  color: #f59e0b;
   text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .lightbox-sep {
-  color: #94a3b8;
+  color: #64748b;
   font-size: 0.75rem;
 }
 
 .gallery-modal-counter {
   font-size: 0.75rem;
-  font-weight: 500;
-  color: #cbd5e1;
+  font-weight: 600;
+  color: #94a3b8;
 }
 
-.gallery-modal-title {
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: #ffffff;
-  margin: 0;
-  line-height: 1.25;
-}
-
-@media (min-width: 640px) {
-  .gallery-modal-title {
-    font-size: 1.25rem;
-  }
-}
-
-.gallery-modal-desc {
-  font-size: 0.75rem;
-  color: #cbd5e1;
-  max-width: 42rem;
-  margin: 0.25rem 0 0;
-  line-height: 1.4;
+.gallery-lightbox-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
 }
 
 .gallery-modal-enquire-btn {
-  padding: 0.65rem 1.25rem;
-  border-radius: 0.5rem;
+  padding: 0.5rem 1.15rem;
+  border-radius: 0.625rem;
   background: linear-gradient(to right, #f59e0b, #d97706);
   color: #ffffff;
   font-weight: 700;
   font-size: 0.75rem;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  box-shadow: 0 4px 14px rgba(217, 119, 6, 0.3);
+  box-shadow: 0 4px 14px rgba(217, 119, 6, 0.35);
   transition: all 0.2s ease;
-  flex-shrink: 0;
   cursor: pointer;
 }
 
@@ -1067,6 +981,207 @@ export const GALLERY_SECTION_TEMPLATE = {
 .gallery-modal-enquire-btn svg {
   width: 0.875rem;
   height: 0.875rem;
+}
+
+.gallery-modal-close-btn {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.gallery-modal-close-btn:hover {
+  background: rgba(239, 68, 68, 0.85);
+  border-color: rgba(239, 68, 68, 1);
+  transform: scale(1.05);
+}
+
+.gallery-modal-close-btn svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+/* MAIN STAGE */
+.gallery-lightbox-stage {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  min-height: 0;
+  overflow: hidden;
+}
+
+@media (min-width: 640px) {
+  .gallery-lightbox-stage {
+    padding: 0.75rem 4.5rem;
+  }
+}
+
+.lightbox-img-frame {
+  position: relative;
+  max-width: 100%;
+  max-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gallery-modal-active-img {
+  max-height: calc(100vh - 14.5rem);
+  max-width: 100%;
+  width: auto;
+  object-fit: contain;
+  border-radius: 1rem;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.12);
+  transition: opacity 0.18s ease;
+}
+
+/* NAVIGATION BUTTONS */
+.lightbox-nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 15;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 9999px;
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (min-width: 640px) {
+  .lightbox-nav-btn {
+    width: 3.25rem;
+    height: 3.25rem;
+  }
+}
+
+.lightbox-nav-btn.prev {
+  left: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .lightbox-nav-btn.prev {
+    left: 1.25rem;
+  }
+}
+
+.lightbox-nav-btn.next {
+  right: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .lightbox-nav-btn.next {
+    right: 1.25rem;
+  }
+}
+
+.lightbox-nav-btn:hover {
+  background: #f59e0b;
+  border-color: #f59e0b;
+  transform: translateY(-50%) scale(1.08);
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.45);
+}
+
+.lightbox-nav-btn svg {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+/* BOTTOM BAR */
+.gallery-lightbox-bottombar {
+  background: rgba(15, 23, 42, 0.85);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 0.5rem 1rem 0.65rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  z-index: 20;
+}
+
+.gallery-modal-desc {
+  font-size: 0.75rem;
+  color: #cbd5e1;
+  max-width: 48rem;
+  margin: 0;
+  line-height: 1.35;
+  text-align: center;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* THUMBNAIL STRIP */
+.gallery-lightbox-strip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  overflow-x: auto;
+  max-width: 100%;
+  padding: 0.2rem 0.5rem;
+  scrollbar-width: thin;
+}
+
+.gallery-lightbox-mini-thumb {
+  width: 3.75rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  border: 2px solid transparent;
+  cursor: pointer;
+  opacity: 0.45;
+  background: #000;
+  transition: all 0.2s ease;
+}
+
+@media (min-width: 640px) {
+  .gallery-lightbox-mini-thumb {
+    width: 4.5rem;
+    height: 3rem;
+  }
+}
+
+.gallery-lightbox-mini-thumb:hover {
+  opacity: 0.85;
+  transform: translateY(-2px);
+}
+
+.gallery-lightbox-mini-thumb.active {
+  opacity: 1;
+  border-color: #f59e0b;
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
+}
+
+.gallery-lightbox-mini-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 `,
 
@@ -1181,9 +1296,30 @@ export const GALLERY_SECTION_TEMPLATE = {
   const titleEl = document.getElementById('gallery-modal-title');
   const descEl = document.getElementById('gallery-modal-desc');
   const enquireBtn = document.getElementById('gallery-modal-enquire-btn');
+  const stripEl = document.getElementById('gallery-lightbox-strip');
+
+  // Populate mini thumbnail strip in lightbox
+  if (stripEl) {
+    stripEl.innerHTML = '';
+    galleryItems.forEach(function(item, idx) {
+      const thumb = document.createElement('div');
+      thumb.className = 'gallery-lightbox-mini-thumb' + (idx === 0 ? ' active' : '');
+      thumb.setAttribute('data-idx', idx.toString());
+      thumb.setAttribute('title', item.title);
+      thumb.innerHTML = '<img src="' + item.image + '" alt="' + item.title + '" loading="lazy" />';
+      thumb.addEventListener('click', function(e) {
+        e.stopPropagation();
+        openLightbox(idx);
+      });
+      stripEl.appendChild(thumb);
+    });
+  }
 
   function openLightbox(idx) {
     currentIdx = idx;
+    if (modal && modal.parentElement !== document.body) {
+      document.body.appendChild(modal);
+    }
     updateLightbox();
     if (modal) modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
@@ -1199,8 +1335,12 @@ export const GALLERY_SECTION_TEMPLATE = {
     if (!item) return;
 
     if (activeImg) {
+      activeImg.style.opacity = '0.35';
       activeImg.src = item.image;
       activeImg.alt = item.title;
+      setTimeout(function() {
+        if (activeImg) activeImg.style.opacity = '1';
+      }, 50);
     }
     if (tagOverlay) tagOverlay.textContent = item.label;
     if (catEl) catEl.textContent = item.category;
@@ -1210,6 +1350,18 @@ export const GALLERY_SECTION_TEMPLATE = {
     if (enquireBtn) {
       enquireBtn.setAttribute('data-modal-title', 'Inquire About: ' + item.title);
       enquireBtn.setAttribute('data-modal-source', 'lightbox_render_' + currentIdx);
+    }
+
+    if (stripEl) {
+      const thumbs = stripEl.querySelectorAll('.gallery-lightbox-mini-thumb');
+      thumbs.forEach(function(t, i) {
+        if (i === currentIdx) {
+          t.classList.add('active');
+          t.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        } else {
+          t.classList.remove('active');
+        }
+      });
     }
   }
 

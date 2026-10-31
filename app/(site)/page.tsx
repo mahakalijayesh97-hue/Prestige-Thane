@@ -45,7 +45,7 @@ export default async function HomePage() {
         <CustomPageRenderer
           key={sec.id}
           content={sec.content}
-          className="w-full [content-visibility:auto] [contain-intrinsic-size:1px_700px]"
+          className="w-full"
         />
       ))}
 

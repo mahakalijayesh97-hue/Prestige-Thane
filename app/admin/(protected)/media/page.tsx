@@ -1,12 +1,10 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
+import Link from 'next/link';
+import Swal from 'sweetalert2';
+import 'sweetalert2/dist/sweetalert2.min.css';
 import { logActivity } from '@/lib/admin';
-import { AdminHeader } from '@/components/admin/admin-header';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card } from '@/components/ui/card';
 import {
   Copy,
   Trash2,
@@ -20,7 +18,7 @@ import {
   X,
   FileImage,
   Pencil,
-  RefreshCw,
+  ArrowLeft,
 } from 'lucide-react';
 
 interface Media {
@@ -42,7 +40,7 @@ function formatBytes(bytes: number | null | undefined): string {
 function getFileExtension(url: string, name?: string): string {
   const target = name || url;
   const match = target.match(/\.([a-zA-Z0-9]+)($|\?)/);
-  return match ? match[1].toUpperCase() : 'IMG';
+  return match ? match[1].toUpperCase() : 'JPG';
 }
 
 let cachedMediaList: Media[] | null = null;
@@ -55,6 +53,7 @@ export default function AdminMediaPage() {
   const [copied, setCopied] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState<'upload' | 'url'>('upload');
+  const [imgErrors, setImgErrors] = useState<Record<string, boolean>>({});
 
   // URL Import state
   const [urlInput, setUrlInput] = useState('');
@@ -151,6 +150,13 @@ export default function AdminMediaPage() {
         prev.map((item) => (item.id === editingMedia.id ? { ...item, ...updated.item } : item))
       );
 
+      // Clear broken image status if updated
+      setImgErrors((prev) => {
+        const next = { ...prev };
+        delete next[editingMedia.id];
+        return next;
+      });
+
       if (previewMedia?.id === editingMedia.id) {
         setPreviewMedia((prev) => (prev ? { ...prev, ...updated.item } : null));
       }
@@ -158,6 +164,15 @@ export default function AdminMediaPage() {
       setEditingMedia(null);
       setEditReplacementFile(null);
       setEditReplacementPreview(null);
+
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: 'Media updated successfully',
+        showConfirmButton: false,
+        timer: 2000,
+      });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error updating media';
       setEditError(msg);
@@ -223,6 +238,14 @@ export default function AdminMediaPage() {
 
       if (successCount > 0) {
         await load();
+        Swal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'success',
+          title: `${successCount} ${successCount === 1 ? 'image' : 'images'} uploaded`,
+          showConfirmButton: false,
+          timer: 2000,
+        });
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Upload failed';
@@ -257,6 +280,14 @@ export default function AdminMediaPage() {
         setUrlInput('');
         setNameInput('');
         await load();
+        Swal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'success',
+          title: 'Image URL imported successfully',
+          showConfirmButton: false,
+          timer: 2000,
+        });
       } else {
         const data = await res.json();
         setUploadError(data.error || 'Failed to save image URL');
@@ -269,9 +300,25 @@ export default function AdminMediaPage() {
     }
   }
 
-  // Handle Media deletion
+  // Handle Media deletion with confirmation
   async function remove(id: string, n: string) {
-    if (!confirm(`Are you sure you want to remove "${n}"?`)) return;
+    const result = await Swal.fire({
+      title: 'Delete Image?',
+      text: `Are you sure you want to remove "${n}"?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Yes, delete',
+      cancelButtonText: 'Cancel',
+      customClass: {
+        popup: 'rounded-2xl',
+        confirmButton: 'rounded-xl text-xs font-bold px-4 py-2',
+        cancelButton: 'rounded-xl text-xs font-semibold px-4 py-2',
+      },
+    });
+
+    if (!result.isConfirmed) return;
 
     try {
       const res = await fetch(`/api/media?id=${encodeURIComponent(id)}`, {
@@ -280,8 +327,20 @@ export default function AdminMediaPage() {
       if (res.ok) {
         await logActivity('delete', 'media', n, id);
         setRows((prev) => prev.filter((r) => r.id !== id));
+        Swal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'success',
+          title: 'Image removed',
+          showConfirmButton: false,
+          timer: 1800,
+        });
       } else {
-        alert('Failed to delete media item.');
+        Swal.fire({
+          icon: 'error',
+          title: 'Delete Failed',
+          text: 'Failed to delete media item.',
+        });
       }
     } catch (err) {
       console.error('Delete error:', err);
@@ -294,31 +353,49 @@ export default function AdminMediaPage() {
     setTimeout(() => setCopied(null), 1800);
   }
 
-  const filtered = rows.filter((m) =>
-    m.name.toLowerCase().includes(search.toLowerCase()) ||
-    m.url.toLowerCase().includes(search.toLowerCase())
+  const filtered = rows.filter(
+    (m) =>
+      m.name.toLowerCase().includes(search.toLowerCase()) ||
+      m.url.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
-    <div className="max-w-6xl space-y-6">
-      <AdminHeader
-        title="Media Library"
-        description="Upload images directly from your device or import external URLs to reuse across pages, banners, blogs, and footer."
-        backHref="/admin"
-      />
+    <div className="max-w-7xl mx-auto space-y-6 pb-12">
+      {/* Top Back Navigation Button */}
+      <div>
+        <Link
+          href="/admin"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" /> Back
+        </Link>
+      </div>
 
-      {/* Main Upload Card */}
-      <Card className="p-5 shadow-sm border-border">
+      {/* Main Header */}
+      <div className="flex items-start gap-3.5">
+        <div className="h-10 w-10 shrink-0 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 text-white flex items-center justify-center shadow-sm">
+          <ImageIcon className="h-5 w-5" />
+        </div>
+        <div>
+          <h1 className="text-xl font-bold tracking-tight text-slate-900">Media Library</h1>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Upload images directly from your device or import external URLs to reuse across pages, banners, blogs, and footer.
+          </p>
+        </div>
+      </div>
+
+      {/* Main Upload Box Card */}
+      <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-2xs space-y-4">
         {/* Tab switch: Upload from device vs Import URL */}
-        <div className="flex items-center justify-between border-b border-border pb-3 mb-4">
-          <div className="flex items-center gap-1.5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => setTab('upload')}
-              className={`flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition ${
+              className={`px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-2 transition ${
                 tab === 'upload'
-                  ? 'bg-primary text-primary-foreground shadow-xs'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
               }`}
             >
               <Upload className="h-3.5 w-3.5" /> Upload from Device
@@ -326,16 +403,16 @@ export default function AdminMediaPage() {
             <button
               type="button"
               onClick={() => setTab('url')}
-              className={`flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition ${
+              className={`px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-2 transition ${
                 tab === 'url'
-                  ? 'bg-primary text-primary-foreground shadow-xs'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
               }`}
             >
               <LinkIcon className="h-3.5 w-3.5" /> Import from URL
             </button>
           </div>
-          <span className="text-xs text-muted-foreground hidden sm:inline">
+          <span className="text-xs text-slate-400 font-medium">
             Max file size: 5MB • PNG, JPG, WebP, SVG, GIF
           </span>
         </div>
@@ -367,71 +444,68 @@ export default function AdminMediaPage() {
                 }
               }}
               onClick={() => !uploading && fileInputRef.current?.click()}
-              className={`flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-8 text-center cursor-pointer transition ${
+              className={`rounded-2xl border-2 border-dashed p-10 flex flex-col items-center justify-center text-center cursor-pointer transition ${
                 isDragging
-                  ? 'border-primary bg-primary/10 scale-[0.99]'
-                  : 'border-border/80 bg-muted/20 hover:border-primary/60 hover:bg-muted/40'
+                  ? 'border-blue-500 bg-blue-100/60 scale-[0.99]'
+                  : 'border-blue-200/90 bg-blue-50/40 hover:bg-blue-50/70 hover:border-blue-400'
               }`}
             >
-              <div className="grid h-14 w-14 place-items-center rounded-full bg-primary/10 text-primary mb-3">
+              <div className="h-14 w-14 rounded-full bg-blue-500 text-white flex items-center justify-center shadow-md mb-3">
                 {uploading ? (
                   <Loader2 className="h-7 w-7 animate-spin" />
                 ) : (
                   <Upload className="h-7 w-7" />
                 )}
               </div>
-              <p className="text-sm font-semibold text-foreground">
+              <p className="text-sm font-bold text-slate-800">
                 {uploading
                   ? 'Uploading images to server...'
                   : 'Click to browse files or drag & drop images here'}
               </p>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-slate-500 mt-1">
                 You can select multiple files at once. PNG, JPG, WebP, SVG or GIF.
               </p>
-              <Button
+              <button
                 type="button"
-                variant="outline"
-                size="sm"
                 disabled={uploading}
-                className="mt-4 pointer-events-none gap-1.5 text-xs"
+                className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition pointer-events-none"
               >
-                <FileImage className="h-3.5 w-3.5" /> Browse from Computer
-              </Button>
+                <FileImage className="h-4 w-4 text-slate-500" /> Browse from Computer
+              </button>
             </div>
           </div>
         ) : (
           /* External URL Input Form */
-          <div className="space-y-4 pt-1">
+          <div className="rounded-2xl border border-slate-200/90 bg-slate-50/60 p-5 space-y-4">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="space-y-1.5">
-                <Label htmlFor="media_name" className="text-xs font-semibold">
-                  Name (optional)
-                </Label>
-                <Input
-                  id="media_name"
+                <label className="text-xs font-semibold text-slate-700">Name (optional)</label>
+                <input
+                  type="text"
                   value={nameInput}
                   onChange={(e) => setNameInput(e.target.value)}
                   placeholder="e.g. Master Bedroom View"
-                  className="h-9"
+                  className="w-full h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition shadow-2xs"
                 />
               </div>
               <div className="space-y-1.5 sm:col-span-2">
-                <Label htmlFor="media_url" className="text-xs font-semibold">
-                  Image URL <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="media_url"
+                <label className="text-xs font-semibold text-slate-700">
+                  Image URL <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
                   value={urlInput}
                   onChange={(e) => setUrlInput(e.target.value)}
                   placeholder="https://images.unsplash.com/... or https://..."
-                  className="h-9 font-mono text-xs"
+                  className="w-full h-9 rounded-xl border border-slate-200 bg-white px-3 font-mono text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition shadow-2xs"
                 />
               </div>
             </div>
-            <Button
+            <button
+              type="button"
               onClick={addUrl}
               disabled={addingUrl || !urlInput.trim()}
-              className="gap-2 text-xs"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs disabled:opacity-50 transition"
             >
               {addingUrl ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -439,180 +513,181 @@ export default function AdminMediaPage() {
                 <LinkIcon className="h-3.5 w-3.5" />
               )}
               {addingUrl ? 'Saving...' : 'Add Image URL to Library'}
-            </Button>
+            </button>
           </div>
         )}
 
         {uploadError && (
-          <p className="mt-3 text-xs text-destructive font-medium bg-destructive/10 p-2.5 rounded-lg border border-destructive/20">
-            {uploadError}
-          </p>
+          <div className="text-xs text-rose-600 font-medium bg-rose-50 p-3 rounded-xl border border-rose-200 flex items-center justify-between">
+            <span>{uploadError}</span>
+            <button
+              type="button"
+              onClick={() => setUploadError('')}
+              className="text-rose-400 hover:text-rose-600"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
         )}
-      </Card>
+      </div>
 
       {/* Gallery Header & Search Filter */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2">
         <div className="flex items-center gap-2">
-          <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
-            <ImageIcon className="h-4 w-4 text-primary" /> Stored Media
-          </h2>
-          <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
+          <ImageIcon className="h-4 w-4 text-blue-600" />
+          <h2 className="text-base font-bold text-slate-900">Stored Media</h2>
+          <span className="rounded-full bg-indigo-50 border border-indigo-200/60 px-2.5 py-0.5 text-xs font-bold text-indigo-600">
             {rows.length} {rows.length === 1 ? 'image' : 'images'}
           </span>
         </div>
 
-        {rows.length > 0 && (
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search images by name..."
-              className="h-8 pl-8 text-xs bg-background"
-            />
-          </div>
-        )}
+        <div className="relative w-full sm:w-64">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search image by name..."
+            className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-2xs transition"
+          />
+        </div>
       </div>
 
       {/* Media Grid */}
       {loading ? (
         <div className="grid place-items-center py-20">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          <p className="text-xs text-muted-foreground mt-2">Loading media library...</p>
+          <Loader2 className="h-7 w-7 animate-spin text-blue-600" />
+          <p className="text-xs text-slate-500 mt-2 font-medium">Loading media library...</p>
         </div>
       ) : rows.length === 0 ? (
-        <Card className="flex flex-col items-center justify-center p-12 text-center border-dashed">
-          <div className="grid h-12 w-12 place-items-center rounded-full bg-muted text-muted-foreground mb-3">
+        <div className="flex flex-col items-center justify-center p-12 text-center rounded-2xl border-2 border-dashed border-slate-200 bg-white">
+          <div className="grid h-12 w-12 place-items-center rounded-full bg-blue-50 text-blue-600 mb-3">
             <ImageIcon className="h-6 w-6" />
           </div>
-          <h3 className="text-sm font-semibold text-foreground">No media uploaded yet</h3>
-          <p className="text-xs text-muted-foreground mt-1 max-w-sm">
+          <h3 className="text-sm font-bold text-slate-800">No media uploaded yet</h3>
+          <p className="text-xs text-slate-500 mt-1 max-w-sm">
             Drag & drop images above or click Browse to upload your project images, banners, and logos.
           </p>
-          <Button
-            variant="outline"
-            size="sm"
+          <button
+            type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="mt-4 gap-1.5 text-xs"
+            className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs transition"
           >
             <Upload className="h-3.5 w-3.5" /> Upload your first image
-          </Button>
-        </Card>
+          </button>
+        </div>
       ) : filtered.length === 0 ? (
-        <Card className="p-8 text-center text-xs text-muted-foreground">
+        <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-xs text-slate-500">
           No media matching &quot;{search}&quot;.
-        </Card>
+        </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           {filtered.map((m) => {
             const ext = getFileExtension(m.url, m.name);
             const sizeStr = formatBytes(m.size);
+            const isBroken = Boolean(imgErrors[m.id]);
 
             return (
-              <Card
+              <div
                 key={m.id}
-                className="group relative flex flex-col overflow-hidden rounded-xl border-border bg-card transition hover:border-primary/50 hover:shadow-md"
+                className="group relative flex flex-col rounded-2xl border border-slate-200/90 bg-white overflow-hidden shadow-2xs hover:shadow-md transition-all"
               >
-                {/* Image Thumbnail with Overlay */}
+                {/* Image Preview Container */}
                 <div
-                  onClick={() => setPreviewMedia(m)}
-                  className="relative aspect-video w-full cursor-pointer overflow-hidden bg-muted/40"
-                  title="Click to view full image"
+                  onClick={() => !isBroken && setPreviewMedia(m)}
+                  className={`relative h-36 w-full overflow-hidden bg-slate-50 flex items-center justify-center border-b border-slate-100 ${
+                    isBroken ? 'cursor-default' : 'cursor-pointer'
+                  }`}
+                  title={isBroken ? 'Image could not be loaded' : 'Click to preview full size'}
                 >
-                  {/* Checkerboard pattern for transparent graphics */}
-                  <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:8px_8px]" />
-
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={m.url}
-                    alt={m.name}
-                    className="h-full w-full object-contain p-1.5 transition-transform duration-200 group-hover:scale-105"
-                    loading="lazy"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src =
-                        'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><text x="10" y="50" fill="%23999">Broken Image</text></svg>';
-                    }}
-                  />
-
-                  {/* Badges on top */}
-                  <div className="absolute top-2 left-2 flex items-center gap-1">
-                    <span className="rounded bg-black/70 px-1.5 py-0.5 text-[9px] font-bold text-white uppercase tracking-wider backdrop-blur-xs">
-                      {ext}
-                    </span>
-                    {sizeStr && (
-                      <span className="rounded bg-black/60 px-1.5 py-0.5 text-[9px] font-medium text-white/90 backdrop-blur-xs">
-                        {sizeStr}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* View Full Overlay Button */}
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition-opacity group-hover:opacity-100">
-                    <span className="flex items-center gap-1 rounded-md bg-white/90 px-2 py-1 text-[11px] font-semibold text-slate-900 shadow">
-                      <Maximize2 className="h-3 w-3" /> View
+                  {/* Top-left format & size badge */}
+                  <div className="absolute top-2.5 left-2.5 z-10">
+                    <span className="rounded bg-slate-900/85 text-white text-[10px] font-bold px-2 py-0.5 tracking-wider backdrop-blur-xs shadow-xs">
+                      {ext}{sizeStr ? ` ${sizeStr}` : ''}
                     </span>
                   </div>
+
+                  {isBroken ? (
+                    <div className="flex flex-col items-center justify-center gap-1.5 text-slate-400 bg-slate-100/90 w-full h-full select-none">
+                      <ImageIcon className="h-8 w-8 text-slate-300 stroke-[1.5]" />
+                      <span className="text-xs font-medium text-slate-400">Broken Image</span>
+                    </div>
+                  ) : (
+                    <>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={m.url}
+                        alt={m.name}
+                        className="h-full w-full object-contain p-2 group-hover:scale-105 transition-transform duration-200"
+                        loading="lazy"
+                        onError={() => setImgErrors((prev) => ({ ...prev, [m.id]: true }))}
+                      />
+                      {/* Hover overlay with preview icon */}
+                      <div className="absolute inset-0 bg-slate-900/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                        <span className="rounded-lg bg-white/95 px-2.5 py-1 text-[11px] font-semibold text-slate-800 shadow-sm flex items-center gap-1">
+                          <Maximize2 className="h-3 w-3" /> View
+                        </span>
+                      </div>
+                    </>
+                  )}
                 </div>
 
-                {/* Info & Action Buttons */}
-                <div className="flex flex-1 flex-col justify-between p-3">
+                {/* Media Details */}
+                <div className="p-3 pb-2.5 flex-1 flex flex-col justify-between">
                   <div>
-                    <p
-                      className="truncate text-xs font-semibold text-foreground"
-                      title={m.name}
-                    >
+                    <p className="truncate text-xs font-bold text-slate-800" title={m.name}>
                       {m.name}
                     </p>
                     <p
-                      className="truncate text-[10px] font-mono text-muted-foreground mt-0.5 select-all"
+                      className="truncate text-[10px] font-mono text-slate-400 mt-0.5 select-all"
                       title={m.url}
                     >
                       {m.url}
                     </p>
                   </div>
 
-                  <div className="mt-3 flex items-center gap-1.5 pt-2 border-t border-border/60">
-                    <Button
-                      variant={copied === m.url ? 'default' : 'outline'}
-                      size="sm"
+                  {/* Action Row */}
+                  <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
+                    <button
+                      type="button"
                       onClick={() => copyUrl(m.url)}
-                      className={`flex-1 gap-1 h-7 text-[11px] font-medium transition ${
-                        copied === m.url
-                          ? 'bg-emerald-600 hover:bg-emerald-600 text-white'
-                          : ''
-                      }`}
-                      title="Copy URL to clipboard to paste in pages, banners or logo"
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-blue-600 transition"
+                      title="Copy URL"
                     >
                       {copied === m.url ? (
-                        <Check className="h-3 w-3 text-white" />
+                        <>
+                          <Check className="h-3.5 w-3.5 text-emerald-600" />
+                          <span className="text-emerald-600 font-semibold text-xs">Copied!</span>
+                        </>
                       ) : (
-                        <Copy className="h-3 w-3" />
+                        <>
+                          <Copy className="h-3.5 w-3.5 text-slate-400" />
+                          <span>Copy URL</span>
+                        </>
                       )}
-                      {copied === m.url ? 'Copied!' : 'Copy URL'}
-                    </Button>
+                    </button>
 
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openEditModal(m)}
-                      className="h-7 w-7 p-0 text-muted-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/40"
-                      title="Edit image name or replace image"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => remove(m.id, m.name)}
-                      className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                      title="Delete this image"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
+                    <div className="flex items-center gap-0.5">
+                      <button
+                        type="button"
+                        onClick={() => openEditModal(m)}
+                        className="p-1 rounded-md text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition"
+                        title="Edit image"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => remove(m.id, m.name)}
+                        className="p-1 rounded-md text-rose-500 hover:text-rose-700 hover:bg-rose-50 transition"
+                        title="Delete image"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </Card>
+              </div>
             );
           })}
         </div>
@@ -626,60 +701,57 @@ export default function AdminMediaPage() {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="relative max-h-[90vh] max-w-4xl overflow-hidden rounded-2xl border border-border bg-background p-4 shadow-2xl"
+            className="relative max-h-[90vh] max-w-4xl w-full overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl space-y-4"
           >
-            <div className="flex items-center justify-between pb-3 border-b border-border">
-              <div>
-                <h3 className="text-sm font-semibold truncate max-w-md">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="min-w-0 pr-4">
+                <h3 className="text-sm font-bold text-slate-900 truncate">
                   {previewMedia.name}
                 </h3>
-                <p className="text-[11px] font-mono text-muted-foreground">
+                <p className="text-[11px] font-mono text-slate-400 truncate mt-0.5">
                   {previewMedia.url}
                 </p>
               </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
                   onClick={() => {
                     const toEdit = previewMedia;
                     setPreviewMedia(null);
                     openEditModal(toEdit);
                   }}
-                  className="gap-1 h-8 text-xs text-primary border-primary/30 hover:bg-primary/10"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
                 >
-                  <Pencil className="h-3 w-3" /> Edit
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
+                  <Pencil className="h-3 w-3 text-slate-500" /> Edit
+                </button>
+                <button
+                  type="button"
                   onClick={() => copyUrl(previewMedia.url)}
-                  className="gap-1 h-8 text-xs"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs transition"
                 >
                   {copied === previewMedia.url ? (
-                    <Check className="h-3 w-3 text-emerald-500" />
+                    <Check className="h-3 w-3 text-white" />
                   ) : (
-                    <Copy className="h-3 w-3" />
+                    <Copy className="h-3 w-3 text-white" />
                   )}
                   {copied === previewMedia.url ? 'Copied URL!' : 'Copy URL'}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
+                </button>
+                <button
+                  type="button"
                   onClick={() => setPreviewMedia(null)}
-                  className="h-8 w-8 p-0"
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
                 >
                   <X className="h-4 w-4" />
-                </Button>
+                </button>
               </div>
             </div>
 
-            <div className="grid place-items-center py-4 bg-muted/20 rounded-xl mt-3 max-h-[70vh] overflow-auto">
+            <div className="grid place-items-center py-4 bg-slate-50 rounded-xl max-h-[65vh] overflow-auto">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={previewMedia.url}
                 alt={previewMedia.name}
-                className="max-h-[60vh] w-auto max-w-full object-contain rounded-lg shadow"
+                className="max-h-[60vh] w-auto max-w-full object-contain rounded-lg shadow-sm"
               />
             </div>
           </div>
@@ -694,32 +766,31 @@ export default function AdminMediaPage() {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="relative max-h-[90vh] max-w-lg w-full overflow-hidden rounded-2xl border border-border bg-background p-5 shadow-2xl space-y-4"
+            className="relative max-h-[90vh] max-w-lg w-full overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl space-y-4"
           >
-            <div className="flex items-center justify-between pb-3 border-b border-border">
-              <div className="flex items-center gap-2">
-                <div className="grid h-8 w-8 place-items-center rounded-lg bg-primary/10 text-primary">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="h-8 w-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
                   <Pencil className="h-4 w-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold">Update Media Item</h3>
-                  <p className="text-[11px] text-muted-foreground">Rename or replace this media asset</p>
+                  <h3 className="text-sm font-bold text-slate-900">Update Media Item</h3>
+                  <p className="text-[11px] text-slate-400">Rename or replace this media asset</p>
                 </div>
               </div>
-              <Button
-                size="sm"
-                variant="ghost"
+              <button
+                type="button"
                 onClick={() => setEditingMedia(null)}
-                className="h-8 w-8 p-0"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
               >
                 <X className="h-4 w-4" />
-              </Button>
+              </button>
             </div>
 
             <form onSubmit={handleUpdateMedia} className="space-y-4">
               {/* Preview Thumbnail */}
-              <div className="flex items-center gap-3.5 p-3 rounded-xl bg-muted/40 border border-border">
-                <div className="h-16 w-20 shrink-0 overflow-hidden rounded-lg bg-background border border-border flex items-center justify-center">
+              <div className="flex items-center gap-3.5 p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                <div className="h-16 w-20 shrink-0 overflow-hidden rounded-lg bg-white border border-slate-200 flex items-center justify-center">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={editReplacementPreview || editUrl || editingMedia.url}
@@ -728,11 +799,14 @@ export default function AdminMediaPage() {
                   />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold truncate">{editingMedia.name}</p>
-                  <p className="text-[10px] font-mono text-muted-foreground truncate">{editingMedia.url}</p>
+                  <p className="text-xs font-bold text-slate-800 truncate">{editingMedia.name}</p>
+                  <p className="text-[10px] font-mono text-slate-400 truncate mt-0.5">
+                    {editingMedia.url}
+                  </p>
                   {editReplacementFile && (
                     <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 font-semibold mt-1">
-                      <Check className="h-3 w-3" /> New file chosen ({formatBytes(editReplacementFile.size)})
+                      <Check className="h-3 w-3" /> New file chosen (
+                      {formatBytes(editReplacementFile.size)})
                     </span>
                   )}
                 </div>
@@ -740,13 +814,13 @@ export default function AdminMediaPage() {
 
               {/* Name Input */}
               <div className="space-y-1.5">
-                <Label htmlFor="edit-name" className="text-xs font-medium">Image Name / Title</Label>
-                <Input
-                  id="edit-name"
+                <label className="text-xs font-semibold text-slate-700">Image Name / Title</label>
+                <input
+                  type="text"
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
                   placeholder="e.g. Grand Entrance Gate"
-                  className="h-9 text-xs"
+                  className="w-full h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition shadow-2xs"
                   required
                 />
               </div>
@@ -754,13 +828,15 @@ export default function AdminMediaPage() {
               {/* Replace Image Option */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label className="text-xs font-medium">Replace Image (Optional)</Label>
+                  <label className="text-xs font-semibold text-slate-700">Replace Image (Optional)</label>
                   <div className="flex items-center gap-1">
                     <button
                       type="button"
                       onClick={() => setEditTab('upload')}
-                      className={`px-2 py-0.5 rounded text-[10px] font-semibold transition ${
-                        editTab === 'upload' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition ${
+                        editTab === 'upload'
+                          ? 'bg-blue-600 text-white'
+                          : 'text-slate-500 hover:bg-slate-100'
                       }`}
                     >
                       Upload File
@@ -768,8 +844,10 @@ export default function AdminMediaPage() {
                     <button
                       type="button"
                       onClick={() => setEditTab('url')}
-                      className={`px-2 py-0.5 rounded text-[10px] font-semibold transition ${
-                        editTab === 'url' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition ${
+                        editTab === 'url'
+                          ? 'bg-blue-600 text-white'
+                          : 'text-slate-500 hover:bg-slate-100'
                       }`}
                     >
                       Image URL
@@ -782,25 +860,30 @@ export default function AdminMediaPage() {
                     <input
                       type="file"
                       ref={editFileInputRef}
-                      onChange={(e) => e.target.files?.[0] && handleReplacementFile(e.target.files[0])}
+                      onChange={(e) =>
+                        e.target.files?.[0] && handleReplacementFile(e.target.files[0])
+                      }
                       accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif"
                       className="hidden"
                     />
                     <div
                       onClick={() => editFileInputRef.current?.click()}
-                      className="cursor-pointer rounded-xl border border-dashed border-border bg-muted/20 p-3.5 text-center hover:bg-muted/40 transition"
+                      className="cursor-pointer rounded-xl border border-dashed border-slate-300 bg-slate-50/70 p-3.5 text-center hover:bg-slate-100/70 transition"
                     >
-                      <Upload className="mx-auto h-4 w-4 text-muted-foreground mb-1" />
-                      <p className="text-xs font-medium text-foreground">
-                        {editReplacementFile ? editReplacementFile.name : 'Click to select a replacement file'}
+                      <Upload className="mx-auto h-4 w-4 text-slate-400 mb-1" />
+                      <p className="text-xs font-semibold text-slate-700">
+                        {editReplacementFile
+                          ? editReplacementFile.name
+                          : 'Click to select a replacement file'}
                       </p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                      <p className="text-[10px] text-slate-400 mt-0.5">
                         PNG, JPG, WebP, SVG, GIF up to 5MB
                       </p>
                     </div>
                   </div>
                 ) : (
-                  <Input
+                  <input
+                    type="text"
                     value={editUrl}
                     onChange={(e) => {
                       setEditUrl(e.target.value);
@@ -808,37 +891,38 @@ export default function AdminMediaPage() {
                       setEditReplacementPreview(null);
                     }}
                     placeholder="https://images.pexels.com/... or /assets/..."
-                    className="h-9 text-xs font-mono"
+                    className="w-full h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition shadow-2xs"
                   />
                 )}
               </div>
 
               {editError && (
-                <p className="text-xs text-destructive font-medium bg-destructive/10 p-2.5 rounded-lg border border-destructive/20">
+                <div className="text-xs text-rose-600 font-medium bg-rose-50 p-2.5 rounded-xl border border-rose-200">
                   {editError}
-                </p>
+                </div>
               )}
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
-                <Button
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
                   type="button"
-                  variant="outline"
-                  size="sm"
                   onClick={() => setEditingMedia(null)}
                   disabled={savingEdit}
-                  className="h-8 text-xs"
+                  className="px-4 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
                 >
                   Cancel
-                </Button>
-                <Button
+                </button>
+                <button
                   type="submit"
-                  size="sm"
                   disabled={savingEdit || !editName.trim()}
-                  className="h-8 gap-1.5 text-xs"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs disabled:opacity-50 transition"
                 >
-                  {savingEdit ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                  {savingEdit ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Check className="h-3.5 w-3.5" />
+                  )}
                   {savingEdit ? 'Updating...' : 'Save Changes'}
-                </Button>
+                </button>
               </div>
             </form>
           </div>

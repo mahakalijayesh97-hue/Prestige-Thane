@@ -1061,12 +1061,12 @@ export const PRESTIGE_HERO_TEMPLATE = {
 .hero-lightbox-overlay {
   position: fixed;
   inset: 0;
-  z-index: 99999;
+  z-index: 9999999;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(15, 23, 42, 0.88);
-  backdrop-filter: blur(8px);
+  background: rgba(8, 12, 22, 0.94);
+  backdrop-filter: blur(12px);
   padding: 1rem;
 }
 
@@ -1439,6 +1439,9 @@ export const PRESTIGE_HERO_TEMPLATE = {
       });
     }
 
+    if (lightbox && lightbox.parentElement !== document.body) {
+      document.body.appendChild(lightbox);
+    }
     lightbox.style.display = 'flex';
     document.body.style.overflow = 'hidden';
   }
