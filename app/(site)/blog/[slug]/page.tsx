@@ -1,10 +1,18 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { getPublishedPost } from '@/lib/data';
+import { getPublishedPost, getPublishedPosts } from '@/lib/data';
 import { ArrowLeft } from 'lucide-react';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+export const revalidate = 10;
+
+export async function generateStaticParams() {
+  try {
+    const posts = await getPublishedPosts();
+    return posts.filter((p) => p.slug).map((post) => ({ slug: post.slug }));
+  } catch {
+    return [];
+  }
+}
 
 interface Props {
   params: { slug: string };
@@ -30,7 +38,13 @@ export default async function BlogPostPage({ params }: Props) {
       </Link>
       {post.cover_image && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={post.cover_image} alt={post.title} className="mb-8 aspect-[16/8] w-full rounded-xl object-cover" />
+        <img
+          src={post.cover_image}
+          alt={post.title}
+          fetchPriority="high"
+          decoding="async"
+          className="mb-8 aspect-[16/8] w-full rounded-xl object-cover"
+        />
       )}
       <h1 className="text-4xl font-bold tracking-tight">{post.title}</h1>
       <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">

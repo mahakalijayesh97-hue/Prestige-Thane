@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getSupabaseBrowser } from '@/lib/supabase/browser';
 import { logActivity } from '@/lib/admin';
 import { AdminHeader } from '@/components/admin/admin-header';
 import { Button } from '@/components/ui/button';
@@ -68,23 +67,26 @@ export default function AdminFooterPage() {
 
   async function load() {
     if (!cachedFooterCols) setLoading(true);
-    const supabase = getSupabaseBrowser();
-    const [c, l] = await Promise.all([
-      supabase
-        .from('footer_columns')
-        .select('*')
-        .order('sort_order', { ascending: true }),
-      supabase
-        .from('footer_links')
-        .select('*')
-        .order('sort_order', { ascending: true }),
-    ]);
-    const cols = (c.data as Col[]) ?? [];
-    const lnks = (l.data as LinkItem[]) ?? [];
-    cachedFooterCols = cols;
-    cachedFooterLinks = lnks;
-    setColumns(cols);
-    setLinks(lnks);
+    try {
+      const [resCols, resLinks] = await Promise.all([
+        fetch('/api/footer/columns', { cache: 'no-store' }),
+        fetch('/api/footer/links', { cache: 'no-store' }),
+      ]);
+      if (resCols.ok && resLinks.ok) {
+        const jsonCols = await resCols.json();
+        const jsonLinks = await resLinks.json();
+        const cols = (jsonCols.columns as Col[]) ?? [];
+        const lnks = (jsonLinks.links as LinkItem[]) ?? [];
+        cachedFooterCols = cols;
+        cachedFooterLinks = lnks;
+        setColumns(cols);
+        setLinks(lnks);
+        setLoading(false);
+        return;
+      }
+    } catch (err) {
+      console.warn('Failed to fetch footer data:', err);
+    }
     setLoading(false);
   }
 
@@ -195,46 +197,68 @@ export default function AdminFooterPage() {
   // Standard column & link operations
   async function addColumn() {
     if (!newCol.trim()) return;
-    const supabase = getSupabaseBrowser();
-    const { error } = await supabase
-      .from('footer_columns')
-      .insert({ title: newCol.trim(), sort_order: columns.length });
-    if (!error) {
-      await logActivity('create', 'footer_column', newCol);
-      setNewCol('');
-      load();
+    try {
+      const res = await fetch('/api/footer/columns', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: newCol.trim(), sort_order: columns.length }),
+      });
+      if (res.ok) {
+        await logActivity('create', 'footer_column', newCol);
+        setNewCol('');
+        load();
+      }
+    } catch (err) {
+      console.error('Error adding column:', err);
     }
   }
 
   async function updateCol(id: string, title: string) {
-    const supabase = getSupabaseBrowser();
-    await supabase.from('footer_columns').update({ title }).eq('id', id);
-    setColumns((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, title } : c))
-    );
+    try {
+      await fetch(`/api/footer/columns/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title }),
+      });
+      setColumns((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, title } : c))
+      );
+    } catch (err) {
+      console.error('Error updating column:', err);
+    }
   }
 
   async function removeCol(id: string, title: string) {
     if (!confirm(`Delete column "${title}" and all its links?`)) return;
-    const supabase = getSupabaseBrowser();
-    await supabase.from('footer_columns').delete().eq('id', id);
-    await logActivity('delete', 'footer_column', title, id);
-    load();
+    try {
+      await fetch(`/api/footer/columns/${id}`, { method: 'DELETE' });
+      await logActivity('delete', 'footer_column', title, id);
+      load();
+    } catch (err) {
+      console.error('Error removing column:', err);
+    }
   }
 
   async function addLink(colId: string, label: string, url: string) {
     if (!label.trim()) return;
-    const supabase = getSupabaseBrowser();
-    const colLinks = links.filter((l) => l.column_id === colId);
-    const { error } = await supabase.from('footer_links').insert({
-      label: label.trim(),
-      url: url || '/',
-      column_id: colId,
-      sort_order: colLinks.length,
-    });
-    if (!error) {
-      await logActivity('create', 'footer_link', label);
-      load();
+    try {
+      const colLinks = links.filter((l) => l.column_id === colId);
+      const res = await fetch('/api/footer/links', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          label: label.trim(),
+          url: url || '/',
+          column_id: colId,
+          sort_order: colLinks.length,
+        }),
+      });
+      if (res.ok) {
+        await logActivity('create', 'footer_link', label);
+        load();
+      }
+    } catch (err) {
+      console.error('Error adding link:', err);
     }
   }
 
@@ -243,18 +267,28 @@ export default function AdminFooterPage() {
     field: 'label' | 'url',
     value: string
   ) {
-    const supabase = getSupabaseBrowser();
-    await supabase.from('footer_links').update({ [field]: value }).eq('id', id);
-    setLinks((prev) =>
-      prev.map((l) => (l.id === id ? { ...l, [field]: value } : l))
-    );
+    try {
+      await fetch(`/api/footer/links/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [field]: value }),
+      });
+      setLinks((prev) =>
+        prev.map((l) => (l.id === id ? { ...l, [field]: value } : l))
+      );
+    } catch (err) {
+      console.error('Error updating link:', err);
+    }
   }
 
   async function removeLink(id: string, label: string) {
-    const supabase = getSupabaseBrowser();
-    await supabase.from('footer_links').delete().eq('id', id);
-    await logActivity('delete', 'footer_link', label, id);
-    load();
+    try {
+      await fetch(`/api/footer/links/${id}`, { method: 'DELETE' });
+      await logActivity('delete', 'footer_link', label, id);
+      load();
+    } catch (err) {
+      console.error('Error removing link:', err);
+    }
   }
 
   return (

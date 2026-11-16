@@ -3,6 +3,7 @@ import { connectToDatabase } from '@/lib/mongodb';
 import PageModel from '@/lib/models/Page';
 import mongoose from 'mongoose';
 import { revalidatePath } from 'next/cache';
+import { invalidateDataCache } from '@/lib/data';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -119,6 +120,7 @@ export async function PUT(
     }
 
     try {
+      invalidateDataCache();
       revalidatePath('/');
       revalidatePath('/', 'layout');
       if (updated?.slug) {
@@ -153,6 +155,7 @@ export async function DELETE(
     await PageModel.findOneAndDelete(query);
 
     try {
+      invalidateDataCache();
       revalidatePath('/');
       revalidatePath('/', 'layout');
       if (slugToDelete) {

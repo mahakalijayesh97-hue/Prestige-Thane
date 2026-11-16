@@ -125,7 +125,7 @@ export default function AdminPagesPage() {
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-1">
                       <Button asChild variant="ghost" size="sm">
-                        <Link href={`/admin/pages/${r.id}`}><Pencil className="h-4 w-4" /></Link>
+                        <Link href={`/admin/pages/${r.id}`} prefetch={false}><Pencil className="h-4 w-4" /></Link>
                       </Button>
                       {!r.is_homepage && (
                         <Button variant="ghost" size="sm" onClick={() => remove(r.id, r.title)} className="text-destructive hover:text-destructive">

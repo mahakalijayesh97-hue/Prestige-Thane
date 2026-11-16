@@ -1,9 +1,20 @@
 import { notFound } from 'next/navigation';
-import { getPublishedPage } from '@/lib/data';
+import { getPublishedPage, getPublishedPages } from '@/lib/data';
 import { CustomPageRenderer } from '@/components/page/custom-page-renderer';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+// Revalidate every 60 seconds — serves instant cached pages while keeping content fresh
+export const revalidate = 10;
+
+export async function generateStaticParams() {
+  try {
+    const pages = await getPublishedPages();
+    return pages
+      .filter((p) => p.slug && p.slug !== 'home')
+      .map((page) => ({ slug: page.slug }));
+  } catch {
+    return [];
+  }
+}
 
 interface Props {
   params: { slug: string };
@@ -27,7 +38,13 @@ export default async function PagePage({ params }: Props) {
     <article className="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
       {page.hero_image && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={page.hero_image} alt={page.title} className="mb-8 aspect-[16/7] w-full rounded-xl object-cover" />
+        <img
+          src={page.hero_image}
+          alt={page.title}
+          fetchPriority="high"
+          decoding="async"
+          className="mb-8 aspect-[16/7] w-full rounded-xl object-cover"
+        />
       )}
       <h1 className="text-4xl font-bold tracking-tight">{page.title}</h1>
       <CustomPageRenderer content={page.content} className="prose-content mt-6 max-w-none" />

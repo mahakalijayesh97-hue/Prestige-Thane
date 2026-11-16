@@ -41,7 +41,7 @@ const API_PREFETCH_MAP: Record<string, string[]> = {
   '/admin/forms': ['/api/forms'],
   '/admin/media': ['/api/media'],
   '/admin/settings': ['/api/settings/theme'],
-  '/admin/footer': ['/api/footer/custom'],
+  '/admin/footer': ['/api/footer/custom', '/api/footer/columns', '/api/footer/links'],
 };
 
 function prefetchAdminData(href: string) {
@@ -89,7 +89,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               <Link
                 key={item.href}
                 href={item.href}
-                prefetch={true}
+                prefetch={false}
                 onMouseEnter={() => prefetchAdminData(item.href)}
                 title={collapsed ? item.label : undefined}
                 className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${

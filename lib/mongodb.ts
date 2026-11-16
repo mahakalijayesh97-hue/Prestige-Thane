@@ -77,8 +77,8 @@ export async function connectToDatabase(): Promise<typeof mongoose> {
   }
 
   const opts: mongoose.ConnectOptions = {
-    bufferCommands: true,
-    serverSelectionTimeoutMS: 10000,
+    bufferCommands: false,
+    serverSelectionTimeoutMS: 1000,
   };
 
   cached!.uri = targetUri;

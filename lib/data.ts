@@ -115,6 +115,41 @@ export async function getNavItems(): Promise<NavItem[]> {
 
 export async function getFooter(): Promise<{ columns: FooterColumn[]; links: FooterLink[] }> {
   try {
+    const { connectToDatabase } = await import('./mongodb');
+    const { default: FooterColumnModel } = await import('./models/FooterColumn');
+    const { default: FooterLinkModel } = await import('./models/FooterLink');
+    await connectToDatabase();
+
+    const [cols, lnks] = await Promise.all([
+      FooterColumnModel.find({}).sort({ sort_order: 1 }).lean(),
+      FooterLinkModel.find({}).sort({ sort_order: 1 }).lean(),
+    ]);
+
+    if (cols && cols.length > 0) {
+      return {
+        columns: cols.map((c) => ({
+          id: c.supabase_id || c._id.toString(),
+          title: c.title,
+          sort_order: c.sort_order ?? 0,
+          created_at: c.created_at ? new Date(c.created_at).toISOString() : '',
+          updated_at: c.updated_at ? new Date(c.updated_at).toISOString() : '',
+        })),
+        links: (lnks || []).map((l) => ({
+          id: l.supabase_id || l._id.toString(),
+          label: l.label,
+          url: l.url,
+          column_id: l.column_id,
+          sort_order: l.sort_order ?? 0,
+          created_at: l.created_at ? new Date(l.created_at).toISOString() : '',
+          updated_at: l.updated_at ? new Date(l.updated_at).toISOString() : '',
+        })),
+      };
+    }
+  } catch (err) {
+    console.warn('MongoDB getFooter fallback:', err);
+  }
+
+  try {
     const supabase = getSupabaseServer();
     const [cols, links] = await Promise.all([
       supabase.from('footer_columns').select('*').order('sort_order', { ascending: true }),

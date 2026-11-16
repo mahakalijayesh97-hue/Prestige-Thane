@@ -27,6 +27,8 @@ const NavItemSchema = new Schema<INavItemDoc>(
   }
 );
 
+NavItemSchema.index({ is_active: 1, sort_order: 1 });
+
 if (mongoose.models && mongoose.models.NavItem) {
   delete mongoose.models.NavItem;
 }

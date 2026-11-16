@@ -71,7 +71,7 @@ async function runWithAllDatabases(taskName, taskFn) {
       await conn.close();
       successCount++;
     } catch (err) {
-      console.error(`❌ [${label}] Error in ${taskName} (${maskedUri}):`, err.message);
+      console.error(` [${label}] Error in ${taskName} (${maskedUri}):`, err.message);
     }
   }
 

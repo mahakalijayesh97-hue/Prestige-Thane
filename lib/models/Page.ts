@@ -35,6 +35,9 @@ const PageSchema = new Schema<IPageDoc>(
   }
 );
 
+PageSchema.index({ slug: 1, status: 1 });
+PageSchema.index({ status: 1, sort_order: 1 });
+
 if (mongoose.models && mongoose.models.Page) {
   delete mongoose.models.Page;
 }

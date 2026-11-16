@@ -1,8 +1,7 @@
 import Link from 'next/link';
 import { getPublishedPosts } from '@/lib/data';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+export const revalidate = 10;
 
 export default async function BlogPage() {
   const posts = await getPublishedPosts();
@@ -21,7 +20,13 @@ export default async function BlogPage() {
           >
             {post.cover_image && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={post.cover_image} alt={post.title} className="h-48 w-full object-cover transition group-hover:scale-[1.02]" />
+              <img
+                src={post.cover_image}
+                alt={post.title}
+                loading="lazy"
+                decoding="async"
+                className="h-48 w-full object-cover transition group-hover:scale-[1.02]"
+              />
             )}
             <div className="flex flex-1 flex-col p-5">
               <h2 className="text-lg font-semibold text-card-foreground group-hover:text-primary">{post.title}</h2>
