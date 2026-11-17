@@ -535,9 +535,10 @@ export default function AdminNavPage() {
           <Link
             href="/"
             target="_blank"
-            className="flex items-center gap-1 text-xs font-bold text-amber-600 hover:text-amber-700 hover:underline lowercase tracking-normal"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 text-xs font-bold tracking-normal transition"
           >
-            Open live site <ExternalLink className="h-3 w-3" />
+            <span>Open Live Site</span>
+            <ExternalLink className="h-3 w-3" />
           </Link>
         </div>
 

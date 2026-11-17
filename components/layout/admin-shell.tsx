@@ -343,7 +343,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                       </div>
 
                       {/* Scrollable list for pages */}
-                      <div className="max-h-[340px] overflow-y-auto space-y-0.5 pr-0.5 [scrollbar-width:thin]">
+                      <div className="max-h-[190px] overflow-y-auto space-y-0.5 pr-0.5 [scrollbar-width:thin]">
                         {pagesList.map((p, idx) => {
                           const pageKey = p.id || (p as any)._id || p.slug;
                           const isCurrentPage =
@@ -567,7 +567,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                       </div>
 
                       {/* Scrollable list for forms under Messages */}
-                      <div className="max-h-[300px] overflow-y-auto space-y-0.5 pr-0.5 [scrollbar-width:thin]">
+                      <div className="max-h-[190px] overflow-y-auto space-y-0.5 pr-0.5 [scrollbar-width:thin]">
                         {/* All Inquiries Option */}
                         <Link
                           href="/admin/contact"
