@@ -33,7 +33,7 @@ const adminEmail = (args[0] || process.env.ADMIN_EMAIL || 'admin@prestige.com').
 const adminPassword = args[1] || process.env.ADMIN_PASSWORD || 'Admin@123456';
 const configuredUri =
   process.env.MONGODB_URI ||
-  'mongodb+srv://jayesh:jayesh%40123@cluster0.9usafbn.mongodb.net/Prestige?retryWrites=true&w=majority&appName=Cluster0';
+  'mongodb://localhost:27017/';
 
 // Strictly Live MongoDB Atlas
 const targetUris = [configuredUri];

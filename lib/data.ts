@@ -17,12 +17,14 @@ let cacheSettings: { data: SiteSettings; expires: number } | null = null;
 let cacheNavItems: { data: NavItem[]; expires: number } | null = null;
 let cacheGlobalTheme: { data: GlobalThemeSettings; expires: number } | null = null;
 let cachePublishedPages: { data: PageRow[]; expires: number } | null = null;
+let cacheOpenLinks: { data: OpenLinkSummary[]; expires: number } | null = null;
 
 export function invalidateDataCache() {
   cacheSettings = null;
   cacheNavItems = null;
   cacheGlobalTheme = null;
   cachePublishedPages = null;
+  cacheOpenLinks = null;
 }
 
 export async function getSettings(): Promise<SiteSettings | null> {
@@ -165,6 +167,44 @@ export async function getFooter(): Promise<{ columns: FooterColumn[]; links: Foo
       columns: [],
       links: [],
     };
+  }
+}
+
+export interface OpenLinkSummary {
+  id: string;
+  title: string;
+  slug: string;
+  url: string;
+  target?: string;
+}
+
+export async function getOpenLinks(): Promise<OpenLinkSummary[]> {
+  const now = Date.now();
+  if (cacheOpenLinks && cacheOpenLinks.expires > now) {
+    return cacheOpenLinks.data;
+  }
+
+  try {
+    const { connectToDatabase } = await import('./mongodb');
+    const { default: OpenLinkModel } = await import('./models/OpenLink');
+    await connectToDatabase();
+    const list = await OpenLinkModel.find({ status: 'published', is_active: { $ne: false } })
+      .sort({ sort_order: 1, created_at: 1 })
+      .lean();
+
+    const formatted: OpenLinkSummary[] = (list || []).map((item: any) => ({
+      id: item._id.toString(),
+      title: item.title,
+      slug: item.slug,
+      url: item.url,
+      target: item.target || '_self',
+    }));
+
+    cacheOpenLinks = { data: formatted, expires: now + CACHE_TTL_MS };
+    return formatted;
+  } catch (err) {
+    console.warn('getOpenLinks fallback:', err);
+    return [];
   }
 }
 

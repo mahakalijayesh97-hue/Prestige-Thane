@@ -1,5 +1,11 @@
 import Link from 'next/link';
-import { getFooter, getSettings, getFooterCustomSettings, getGlobalThemeSettings } from '@/lib/data';
+import {
+  getFooter,
+  getSettings,
+  getFooterCustomSettings,
+  getGlobalThemeSettings,
+  getOpenLinks,
+} from '@/lib/data';
 import { CustomFooterRenderer } from '@/components/layout/custom-footer-renderer';
 import {
   Twitter,
@@ -11,17 +17,59 @@ import {
   MapPin,
 } from 'lucide-react';
 
+function injectOpenLinksIntoQuickLinks(html: string, openLinks: any[]): string {
+  if (!html || !openLinks || openLinks.length === 0) return html;
+
+  const linksHtml = openLinks
+    .map(
+      (item) =>
+        `<li><a href="${item.url}" ${
+          item.target === '_blank' ? 'target="_blank" rel="noreferrer"' : ''
+        }>${item.title}</a></li>`
+    )
+    .join('\n');
+
+  // 1. If custom footer has Enquiry Now button in Quick Links column, insert above it
+  if (html.includes('btn-link-gold')) {
+    return html.replace(
+      /(<li[^>]*>\s*<button[^>]*class=["'][^"']*btn-link-gold)/i,
+      `${linksHtml}\n$1`
+    );
+  }
+
+  // 2. If custom footer has col-links section with </ul>
+  if (html.match(/col-links[\s\S]*?<\/ul>/i)) {
+    return html.replace(
+      /(class=["'][^"']*col-links[^"']*[\s\S]*?<ul[^>]*>[\s\S]*?)(<\/ul>)/i,
+      `$1\n${linksHtml}\n$2`
+    );
+  }
+
+  // 3. Fallback: match after Quick Links heading's <ul>
+  if (html.match(/Quick\s*Links[\s\S]*?<ul[^>]*>/i)) {
+    return html.replace(/(Quick\s*Links[\s\S]*?<ul[^>]*>)/i, `$1\n${linksHtml}`);
+  }
+
+  return html;
+}
+
 export async function Footer() {
-  const [footer, settings, footerCustom, theme] = await Promise.all([
+  const [footer, settings, footerCustom, theme, openLinks] = await Promise.all([
     getFooter(),
     getSettings(),
     getFooterCustomSettings(),
     getGlobalThemeSettings(),
+    getOpenLinks(),
   ]);
   const { columns, links } = footer;
 
   const hasCustomFooter = Boolean(
     footerCustom.custom_html || footerCustom.custom_css || footerCustom.custom_js
+  );
+
+  const processedCustomHtml = injectOpenLinksIntoQuickLinks(
+    footerCustom.custom_html,
+    openLinks
   );
 
   if (hasCustomFooter && !footerCustom.show_default_links) {
@@ -40,7 +88,7 @@ export async function Footer() {
           </div>
         )}
         <CustomFooterRenderer
-          html={footerCustom.custom_html}
+          html={processedCustomHtml}
           css={footerCustom.custom_css}
           js={footerCustom.custom_js}
         />
@@ -64,12 +112,12 @@ export async function Footer() {
         )}
 
         {/* Custom HTML, CSS, and JS injected into Footer */}
-        {(footerCustom.custom_html ||
+        {(processedCustomHtml ||
           footerCustom.custom_css ||
           footerCustom.custom_js) && (
           <div className="mb-8">
             <CustomFooterRenderer
-              html={footerCustom.custom_html}
+              html={processedCustomHtml}
               css={footerCustom.custom_css}
               js={footerCustom.custom_js}
             />
@@ -153,15 +201,16 @@ export async function Footer() {
               </div>
             </div>
 
-            {columns.slice(0, 3).map((col) => (
-              <div key={col.id} className="space-y-3">
-                <h4 className="text-sm font-semibold text-foreground">
-                  {col.title}
-                </h4>
-                <ul className="space-y-2">
-                  {links
-                    .filter((l) => l.column_id === col.id)
-                    .map((link) => (
+            {columns.slice(0, 3).map((col) => {
+              const isQuickLinksCol = col.title.toLowerCase().includes('quick');
+              const colLinks = links.filter((l) => l.column_id === col.id);
+              return (
+                <div key={col.id} className="space-y-3">
+                  <h4 className="text-sm font-semibold text-foreground">
+                    {col.title}
+                  </h4>
+                  <ul className="space-y-2">
+                    {colLinks.map((link) => (
                       <li key={link.id}>
                         <Link
                           href={link.url}
@@ -171,13 +220,71 @@ export async function Footer() {
                         </Link>
                       </li>
                     ))}
-                  {links.filter((l) => l.column_id === col.id).length === 0 && (
-                    <li className="text-sm text-muted-foreground/60">
-                      No links yet.
-                    </li>
-                  )}
-                </ul>
-              </div>
+                    {/* Inject open links directly into Quick Links column */}
+                    {isQuickLinksCol &&
+                      openLinks &&
+                      openLinks.map((item) => (
+                        <li key={`open-link-${item.id}`}>
+                          <Link
+                            href={item.url}
+                            target={item.target === '_blank' ? '_blank' : undefined}
+                            className="text-sm text-muted-foreground hover:text-primary font-medium"
+                          >
+                            {item.title}
+                          </Link>
+                        </li>
+                      ))}
+                    {colLinks.length === 0 && (!isQuickLinksCol || openLinks.length === 0) && (
+                      <li className="text-sm text-muted-foreground/60">
+                        No links yet.
+                      </li>
+                    )}
+                  </ul>
+                </div>
+              );
+            })}
+
+            {/* If no column named Quick Links exists, create Quick Links column */}
+            {!columns.some((c) => c.title.toLowerCase().includes('quick')) &&
+              openLinks &&
+              openLinks.length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="text-sm font-semibold text-foreground">
+                    Quick Links
+                  </h4>
+                  <ul className="space-y-2">
+                    {openLinks.map((item) => (
+                      <li key={`open-link-${item.id}`}>
+                        <Link
+                          href={item.url}
+                          target={item.target === '_blank' ? '_blank' : undefined}
+                          className="text-sm text-muted-foreground hover:text-primary font-medium"
+                        >
+                          {item.title}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+          </div>
+        )}
+
+        {/* Open Links Strip */}
+        {openLinks && openLinks.length > 0 && (
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 border-t border-border pt-6 text-sm">
+            <span className="font-semibold text-foreground text-xs uppercase tracking-wider">
+              Quick Links:
+            </span>
+            {openLinks.map((item) => (
+              <Link
+                key={item.id}
+                href={item.url}
+                target={item.target === '_blank' ? '_blank' : undefined}
+                className="text-sm text-muted-foreground transition-colors hover:text-primary hover:underline font-medium"
+              >
+                {item.title}
+              </Link>
             ))}
           </div>
         )}
