@@ -4,7 +4,7 @@ import path from 'path';
 
 // Live Server MongoDB Atlas connection string
 const LIVE_ATLAS_URI =
-  'mongodb+srv://jayesh:jayesh%40123@cluster0.9usafbn.mongodb.net/Prestige?retryWrites=true&w=majority&appName=Cluster0';
+  'mongodb://localhost:27017/';
 
 export function getMongoUri(): string {
   // 1. Read fresh from .env if present

@@ -34,6 +34,8 @@ export default async function PagePage({ params }: Props) {
   const page = await getPublishedPage(params.slug);
   if (!page) notFound();
 
+  const hasContent = Boolean(page.content && page.content.trim());
+
   return (
     <>
       {page.hide_from_nav && (
@@ -56,20 +58,27 @@ export default async function PagePage({ params }: Props) {
           dangerouslySetInnerHTML={{ __html: page.head_scripts }}
         />
       )}
-      <article className="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
+      <main className="w-full">
         {page.hero_image && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={page.hero_image}
-            alt={page.title}
-            fetchPriority="high"
-            decoding="async"
-            className="mb-8 aspect-[16/7] w-full rounded-xl object-cover"
-          />
+          <div className="mx-auto max-w-7xl px-4 pt-8 sm:px-6 lg:px-8">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={page.hero_image}
+              alt={page.title}
+              fetchPriority="high"
+              decoding="async"
+              className="mb-8 aspect-[16/7] w-full rounded-xl object-cover"
+            />
+          </div>
+      )}
+        {!hasContent ? (
+        <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
+          <h1 className="text-4xl font-bold tracking-tight">{page.title}</h1>
+          </div>
+      ) : (
+        <CustomPageRenderer content={page.content} className="prose-content w-full max-w-none" />
         )}
-        <h1 className="text-4xl font-bold tracking-tight">{page.title}</h1>
-        <CustomPageRenderer content={page.content} className="prose-content mt-6 max-w-none" />
-      </article>
+    </main>
     </>
   );
 }

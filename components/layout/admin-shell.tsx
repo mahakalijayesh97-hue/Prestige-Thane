@@ -40,6 +40,7 @@ import {
 const nav = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/pages', label: 'Pages', icon: FileText },
+  { href: '/admin/open-links', label: 'Open Link', icon: Link2 },
   { href: '/admin/forms', label: 'Forms & Modals', icon: FormInput },
   { href: '/admin/nav', label: 'Navbar', icon: MenuIcon },
   { href: '/admin/footer', label: 'Footer', icon: FooterIcon },
@@ -50,6 +51,7 @@ const nav = [
 
 const API_PREFETCH_MAP: Record<string, string[]> = {
   '/admin/pages': ['/api/pages'],
+  '/admin/open-links': ['/api/open-links'],
   '/admin/nav': ['/api/nav', '/api/settings/theme'],
   '/admin/forms': ['/api/forms'],
   '/admin/media': ['/api/media'],
@@ -148,6 +150,25 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     setIsActionModalOpen(true);
   };
 
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('admin_sidebar_collapsed');
+      if (saved !== null) {
+        setCollapsed(saved === 'true');
+      }
+    } catch {}
+  }, []);
+
+  const toggleSidebar = () => {
+    setCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('admin_sidebar_collapsed', String(next));
+      } catch {}
+      return next;
+    });
+  };
+
   return (
     <div className="flex min-h-screen bg-secondary/20">
       <aside
@@ -162,7 +183,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             </Link>
           )}
           <button
-            onClick={() => setCollapsed((v) => !v)}
+            onClick={toggleSidebar}
             aria-label="Toggle sidebar"
             className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
           >
