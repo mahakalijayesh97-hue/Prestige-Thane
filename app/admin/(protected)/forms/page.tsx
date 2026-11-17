@@ -132,6 +132,10 @@ export default function FormsAdminPage() {
         const createdTitle = newTitle;
         setNewTitle('');
         setNewSlug('');
+        cachedFormsList = null;
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('forms-updated'));
+        }
 
         await Swal.fire({
           icon: 'success',
@@ -206,6 +210,10 @@ export default function FormsAdminPage() {
       const res = await fetch(`/api/forms/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Delete failed');
       setForms((prev) => prev.filter((f) => f._id !== id && f.slug !== id));
+      cachedFormsList = null;
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('forms-updated'));
+      }
       await Swal.fire({
         icon: 'success',
         title: 'Deleted!',
@@ -365,6 +373,15 @@ export default function FormsAdminPage() {
                 >
                   <Pencil className="w-4 h-4" />
                   Edit Fields &amp; Validation
+                </Link>
+
+                <Link
+                  href={`/admin/contact?form=${encodeURIComponent(form.slug || form.title)}`}
+                  className="py-3 px-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-semibold text-sm flex items-center justify-center gap-1.5 transition"
+                  title="View Submitted Messages for this Form"
+                >
+                  <Mail className="w-4 h-4 text-blue-600" />
+                  <span>Messages</span>
                 </Link>
 
                 {form.slug !== 'early-access-modal' && (

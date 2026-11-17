@@ -35,6 +35,7 @@ import {
   ArrowUp,
   ArrowDown,
   Code2,
+  ExternalLink,
 } from 'lucide-react';
 
 const nav = [
@@ -57,7 +58,16 @@ const API_PREFETCH_MAP: Record<string, string[]> = {
   '/admin/media': ['/api/media'],
   '/admin/settings': ['/api/settings/theme'],
   '/admin/footer': ['/api/footer/custom', '/api/footer/columns', '/api/footer/links'],
+  '/admin/contact': ['/api/leads', '/api/forms'],
 };
+
+interface FormSummary {
+  id?: string;
+  _id?: string;
+  slug: string;
+  title: string;
+  is_active?: boolean;
+}
 
 function prefetchAdminData(href: string) {
   const apis = API_PREFETCH_MAP[href];
@@ -81,6 +91,48 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const [draggedPageIndex, setDraggedPageIndex] = useState<number | null>(null);
   const [dragOverPageIndex, setDragOverPageIndex] = useState<number | null>(null);
   const [reorderMode, setReorderMode] = useState(false);
+
+  // Forms submenu state for Messages
+  const [formsList, setFormsList] = useState<FormSummary[]>([]);
+  const [messagesSubmenuOpen, setMessagesSubmenuOpen] = useState(true);
+  const [currentFormParam, setCurrentFormParam] = useState<string | null>(null);
+
+  // Sync current form query param from URL
+  useEffect(() => {
+    const updateFormParam = () => {
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        setCurrentFormParam(params.get('form'));
+      }
+    };
+    updateFormParam();
+    window.addEventListener('popstate', updateFormParam);
+    return () => {
+      window.removeEventListener('popstate', updateFormParam);
+    };
+  }, [pathname]);
+
+  // Auto-fetch all created forms to populate the Messages submenu
+  useEffect(() => {
+    let isMounted = true;
+    const fetchForms = () => {
+      fetch('/api/forms', { cache: 'no-store' })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (isMounted && data?.forms) {
+            setFormsList(data.forms);
+          }
+        })
+        .catch(() => {});
+    };
+
+    fetchForms();
+    window.addEventListener('forms-updated', fetchForms);
+    return () => {
+      isMounted = false;
+      window.removeEventListener('forms-updated', fetchForms);
+    };
+  }, [pathname]);
 
   // Auto-fetch all created pages to populate the submenu and action modal
   useEffect(() => {
@@ -176,21 +228,31 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           collapsed ? 'w-16' : 'w-64'
         }`}
       >
-        <div className="flex h-16 items-center justify-between border-b border-border px-4">
+        <div className="flex h-16 items-center justify-between border-b border-border/80 px-3.5">
           {!collapsed && (
-            <Link href="/admin" className="text-base font-semibold tracking-tight">
-              Acme CMS
+            <Link href="/admin" className="flex items-center gap-2.5 group select-none">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-xs font-bold text-sm tracking-tight group-hover:scale-105 transition-transform">
+                A
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm font-bold tracking-tight text-foreground group-hover:text-primary transition-colors">
+                  Acme CMS
+                </span>
+                <span className="text-[10px] font-medium text-muted-foreground leading-none">
+                  Admin Console
+                </span>
+              </div>
             </Link>
           )}
           <button
             onClick={toggleSidebar}
             aria-label="Toggle sidebar"
-            className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
+            className="grid h-8 w-8 place-items-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
           >
             {collapsed ? <PanelLeft className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
           </button>
         </div>
-        <nav className="flex-1 space-y-1 p-2 overflow-y-auto">
+        <nav className="flex-1 space-y-1 px-2 py-2.5 overflow-y-auto overflow-x-hidden [scrollbar-width:thin] [scrollbar-color:theme(colors.slate.200)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300/80 hover:[&::-webkit-scrollbar-thumb]:bg-slate-400/80 dark:[&::-webkit-scrollbar-thumb]:bg-slate-700">
           {nav.map((item) => {
             const active = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href));
             const Icon = item.icon;
@@ -201,10 +263,10 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               return (
                 <div key={item.href} className="space-y-1">
                   <div
-                    className={`group flex items-center justify-between rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                    className={`group flex items-center justify-between rounded-xl px-3 py-2 text-[13px] font-medium transition-all ${
                       isPagesActive
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                        ? 'bg-blue-600 text-white shadow-xs shadow-blue-600/25 font-semibold'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/90 dark:text-slate-400 dark:hover:text-slate-100 dark:hover:bg-slate-800/60'
                     }`}
                   >
                     <Link
@@ -219,7 +281,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                     </Link>
 
                     {!collapsed && (
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-0.5">
                         {/* Three Dots Action Button: Opens Flexible Page Action & Raw HTML Modal */}
                         <button
                           type="button"
@@ -229,8 +291,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                             openModalForPage();
                           }}
                           title="Page Actions & Raw HTML"
-                          className={`grid h-6 w-6 place-items-center rounded-md transition hover:bg-black/15 dark:hover:bg-white/15 ${
-                            isPagesActive ? 'text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+                          className={`grid h-6 w-6 place-items-center rounded-md transition ${
+                            isPagesActive ? 'hover:bg-white/20 text-white' : 'text-muted-foreground hover:text-foreground hover:bg-slate-200/60 dark:hover:bg-slate-700/60'
                           }`}
                         >
                           <MoreHorizontal className="h-4 w-4" />
@@ -246,15 +308,15 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                               setPagesSubmenuOpen((prev) => !prev);
                             }}
                             title={pagesSubmenuOpen ? 'Collapse Submenu' : 'Expand Submenu'}
-                            className={`grid h-6 w-6 place-items-center rounded-md transition hover:bg-black/15 dark:hover:bg-white/15 ${
-                              isPagesActive ? 'text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+                            className={`grid h-6 w-6 place-items-center rounded-md transition ${
+                              isPagesActive ? 'hover:bg-white/20 text-white' : 'text-muted-foreground hover:text-foreground hover:bg-slate-200/60 dark:hover:bg-slate-700/60'
                             }`}
                           >
-                            {pagesSubmenuOpen ? (
-                              <ChevronDown className="h-3.5 w-3.5" />
-                            ) : (
-                              <ChevronRight className="h-3.5 w-3.5" />
-                            )}
+                            <ChevronDown
+                              className={`h-3.5 w-3.5 transition-transform duration-200 ${
+                                pagesSubmenuOpen ? 'rotate-0' : '-rotate-90'
+                              }`}
+                            />
                           </button>
                         )}
                       </div>
@@ -263,17 +325,17 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
                   {/* Auto-Created Pages Submenu */}
                   {!collapsed && pagesSubmenuOpen && pagesList.length > 0 && (
-                    <div className="ml-3 pl-2 border-l border-border/70 space-y-1 py-1">
+                    <div className="ml-3.5 pl-2.5 border-l-2 border-slate-200/80 dark:border-slate-800 space-y-1 py-1 my-0.5">
                       {/* Submenu Top Header with Page Count & Sort toggle */}
-                      <div className="flex items-center justify-between px-2 py-0.5 text-[10px] text-muted-foreground font-semibold">
-                        <span>{pagesList.length} PAGES</span>
+                      <div className="flex items-center justify-between px-2 py-0.5 text-[10px] text-muted-foreground font-bold tracking-wider uppercase">
+                        <span>{pagesList.length} Pages</span>
                         <button
                           type="button"
                           onClick={() => setReorderMode(!reorderMode)}
-                          className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition ${
+                          className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition ${
                             reorderMode
-                              ? 'bg-primary text-primary-foreground font-bold'
-                              : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                              ? 'bg-blue-600 text-white shadow-2xs'
+                              : 'text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40'
                           }`}
                         >
                           {reorderMode ? 'Done' : 'Sort'}
@@ -281,7 +343,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                       </div>
 
                       {/* Scrollable list for pages */}
-                      <div className="max-h-[380px] overflow-y-auto space-y-0.5 pr-0.5">
+                      <div className="max-h-[340px] overflow-y-auto space-y-0.5 pr-0.5 [scrollbar-width:thin]">
                         {pagesList.map((p, idx) => {
                           const pageKey = p.id || (p as any)._id || p.slug;
                           const isCurrentPage =
@@ -326,13 +388,13 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                                 setDraggedPageIndex(null);
                                 setDragOverPageIndex(null);
                               }}
-                              className={`group/sub flex items-center justify-between rounded-md px-2 py-1.5 text-xs font-medium transition-all ${
+                              className={`group/sub flex items-center justify-between rounded-lg px-2 py-1.5 text-xs font-medium transition-all ${
                                 isCurrentPage
-                                  ? 'bg-primary/15 text-primary font-bold'
-                                  : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground'
+                                  ? 'bg-blue-50 text-blue-700 font-bold dark:bg-blue-950/50 dark:text-blue-300'
+                                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/50'
                               } ${
                                 dragOverPageIndex === idx && reorderMode
-                                  ? 'border-y border-primary bg-primary/10'
+                                  ? 'border-y border-blue-500 bg-blue-50/50'
                                   : ''
                               }`}
                             >
@@ -413,25 +475,165 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                       </div>
 
                       {/* Quick Add Page Submenu Links */}
-                      <div className="flex items-center justify-between gap-1 mt-1 pt-1 border-t border-border/50 px-1 text-[11px]">
+                      <div className="flex items-center gap-1.5 mt-1.5 pt-1.5 border-t border-border/40 px-1">
                         <Link
                           href="/admin/pages/new"
                           prefetch={false}
-                          className="flex items-center gap-1 text-primary hover:underline font-medium py-0.5"
+                          className="flex-1 flex items-center justify-center gap-1 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-900/50 text-[11px] font-semibold py-1 transition"
                           title="Create new flex block page"
                         >
                           <Plus className="h-3 w-3" />
                           <span>Flex Page</span>
                         </Link>
-                        <span className="text-muted-foreground/40">•</span>
                         <Link
                           href="/admin/pages/new?mode=raw"
                           prefetch={false}
-                          className="flex items-center gap-1 text-purple-600 dark:text-purple-400 hover:underline font-medium py-0.5"
+                          className="flex-1 flex items-center justify-center gap-1 rounded-md bg-purple-50 hover:bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 dark:hover:bg-purple-900/50 text-[11px] font-semibold py-1 transition"
                           title="Create new raw HTML/CSS/JS page"
                         >
                           <Code2 className="h-3 w-3" />
                           <span>Raw HTML</span>
+                        </Link>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
+            // Special handling for Messages with auto-created Forms submenu
+            if (item.href === '/admin/contact') {
+              const isMessagesActive = pathname.startsWith('/admin/contact');
+              return (
+                <div key={item.href} className="space-y-1">
+                  <div
+                    className={`group flex items-center justify-between rounded-xl px-3 py-2 text-[13px] font-medium transition-all ${
+                      isMessagesActive
+                        ? 'bg-blue-600 text-white shadow-xs shadow-blue-600/25 font-semibold'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/90 dark:text-slate-400 dark:hover:text-slate-100 dark:hover:bg-slate-800/60'
+                    }`}
+                  >
+                    <Link
+                      href={item.href}
+                      prefetch={false}
+                      onClick={() => setCurrentFormParam(null)}
+                      onMouseEnter={() => prefetchAdminData(item.href)}
+                      title={collapsed ? item.label : undefined}
+                      className="flex flex-1 items-center gap-3 truncate"
+                    >
+                      <Icon className="h-4 w-4 shrink-0" />
+                      {!collapsed && <span className="truncate">{item.label}</span>}
+                    </Link>
+
+                    {!collapsed && (
+                      <div className="flex items-center gap-0.5">
+                        {/* Chevron Submenu Toggle */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setMessagesSubmenuOpen((prev) => !prev);
+                          }}
+                          title={messagesSubmenuOpen ? 'Collapse Forms Submenu' : 'Expand Forms Submenu'}
+                          className={`grid h-6 w-6 place-items-center rounded-md transition ${
+                            isMessagesActive ? 'hover:bg-white/20 text-white' : 'text-muted-foreground hover:text-foreground hover:bg-slate-200/60 dark:hover:bg-slate-700/60'
+                          }`}
+                        >
+                          <ChevronDown
+                            className={`h-3.5 w-3.5 transition-transform duration-200 ${
+                              messagesSubmenuOpen ? 'rotate-0' : '-rotate-90'
+                            }`}
+                          />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Auto-Created Forms Submenu for Messages */}
+                  {!collapsed && messagesSubmenuOpen && (
+                    <div className="ml-3.5 pl-2.5 border-l-2 border-slate-200/80 dark:border-slate-800 space-y-1 py-1 my-0.5">
+                      {/* Submenu Top Header with Form Count */}
+                      <div className="flex items-center justify-between px-2 py-0.5 text-[10px] text-muted-foreground font-bold tracking-wider uppercase">
+                        <span>Forms &amp; Inbox {formsList.length > 0 ? `(${formsList.length})` : ''}</span>
+                        <Link
+                          href="/admin/forms"
+                          prefetch={false}
+                          className="text-[10px] text-blue-600 hover:text-blue-700 font-bold hover:underline"
+                          title="Manage Forms & Modals"
+                        >
+                          Manage
+                        </Link>
+                      </div>
+
+                      {/* Scrollable list for forms under Messages */}
+                      <div className="max-h-[300px] overflow-y-auto space-y-0.5 pr-0.5 [scrollbar-width:thin]">
+                        {/* All Inquiries Option */}
+                        <Link
+                          href="/admin/contact"
+                          prefetch={false}
+                          onClick={() => setCurrentFormParam(null)}
+                          className={`group/sub flex items-center justify-between rounded-lg px-2 py-1.5 text-xs font-medium transition-all ${
+                            isMessagesActive && !currentFormParam
+                              ? 'bg-blue-50 text-blue-700 font-bold dark:bg-blue-950/50 dark:text-blue-300'
+                              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/50'
+                          }`}
+                          title="View all inquiries across all forms"
+                        >
+                          <div className="flex items-center gap-2 truncate flex-1 min-w-0">
+                            <span className={`h-2 w-2 rounded-full shrink-0 ${isMessagesActive && !currentFormParam ? 'bg-blue-600 ring-2 ring-blue-300' : 'bg-slate-400'}`} />
+                            <span className="truncate">All Inquiries</span>
+                          </div>
+                        </Link>
+
+                        {/* Each created form */}
+                        {formsList.map((f, idx) => {
+                          const formKey = f.slug || f.id || (f as any)._id || `form-${idx}`;
+                          const isCurrentForm =
+                            isMessagesActive &&
+                            currentFormParam &&
+                            (currentFormParam.toLowerCase() === f.slug?.toLowerCase() ||
+                              currentFormParam.toLowerCase() === f.title?.toLowerCase() ||
+                              currentFormParam === f.id ||
+                              currentFormParam === (f as any)._id);
+
+                          return (
+                            <Link
+                              key={formKey}
+                              href={`/admin/contact?form=${encodeURIComponent(f.slug || f.title)}`}
+                              prefetch={false}
+                              onClick={() => setCurrentFormParam(f.slug || f.title)}
+                              className={`group/sub flex items-center justify-between rounded-lg px-2 py-1.5 text-xs font-medium transition-all ${
+                                isCurrentForm
+                                  ? 'bg-blue-50 text-blue-700 font-bold dark:bg-blue-950/50 dark:text-blue-300'
+                                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/50'
+                              }`}
+                              title={`${f.title} (${f.slug})`}
+                            >
+                              <div className="flex items-center gap-2 truncate flex-1 min-w-0">
+                                <FormInput className={`h-3.5 w-3.5 shrink-0 ${isCurrentForm ? 'text-blue-600' : 'text-teal-600 dark:text-teal-400'}`} />
+                                <span className="truncate">{f.title}</span>
+                              </div>
+                              {f.slug && (
+                                <span className="text-[9px] font-mono font-medium text-slate-400 group-hover/sub:text-slate-600 shrink-0 ml-1 bg-slate-100 dark:bg-slate-800 px-1 py-0.2 rounded">
+                                  {f.slug.length > 12 ? f.slug.slice(0, 10) + '..' : f.slug}
+                                </span>
+                              )}
+                            </Link>
+                          );
+                        })}
+                      </div>
+
+                      {/* Quick Configure Forms Link */}
+                      <div className="mt-1.5 pt-1.5 border-t border-border/40 px-1">
+                        <Link
+                          href="/admin/forms"
+                          prefetch={false}
+                          className="w-full flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-slate-200 hover:border-blue-400 hover:bg-blue-50/60 text-slate-500 hover:text-blue-700 dark:border-slate-800 dark:hover:bg-blue-950/30 text-[11px] font-semibold py-1.5 transition shadow-2xs"
+                          title="Create and configure lead forms & modals"
+                        >
+                          <Plus className="h-3 w-3" />
+                          <span>Create / Manage Forms</span>
                         </Link>
                       </div>
                     </div>
@@ -447,10 +649,10 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 prefetch={false}
                 onMouseEnter={() => prefetchAdminData(item.href)}
                 title={collapsed ? item.label : undefined}
-                className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                className={`flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium transition-all ${
                   active
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                    ? 'bg-blue-600 text-white shadow-xs shadow-blue-600/25 font-semibold'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/90 dark:text-slate-400 dark:hover:text-slate-100 dark:hover:bg-slate-800/60'
                 } ${collapsed ? 'justify-center' : ''}`}
               >
                 <Icon className="h-4 w-4 shrink-0" />
@@ -459,24 +661,34 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
-        <div className="border-t border-border p-2">
+        <div className="border-t border-border/80 p-2.5 space-y-1 bg-card">
           <Link
             href="/"
             target="_blank"
-            className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground ${collapsed ? 'justify-center' : ''}`}
+            className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 dark:text-slate-400 dark:hover:text-slate-100 dark:hover:bg-slate-800/60 transition ${
+              collapsed ? 'justify-center' : ''
+            }`}
+            title="View Live Site"
           >
-            <Link2 className="h-4 w-4 shrink-0" />
-            {!collapsed && <span>View site</span>}
+            <ExternalLink className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+            {!collapsed && <span>View live site</span>}
           </Link>
           {!collapsed && user && (
-            <div className="px-3 py-2 text-xs text-muted-foreground truncate">{user.email}</div>
+            <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80">
+              <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-bold text-[10px] flex items-center justify-center shrink-0 shadow-2xs">
+                {user.email ? user.email.charAt(0).toUpperCase() : 'A'}
+              </div>
+              <span className="text-[11px] font-medium text-slate-600 dark:text-slate-400 truncate flex-1">
+                {user.email}
+              </span>
+            </div>
           )}
           <Button
             variant="ghost"
             onClick={() => signOut()}
-            className={`w-full justify-${collapsed ? 'center' : 'start'} text-muted-foreground hover:text-foreground`}
+            className={`w-full justify-${collapsed ? 'center' : 'start'} rounded-xl text-xs font-medium text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition`}
           >
-            <LogOut className="h-4 w-4" />
+            <LogOut className="h-3.5 w-3.5" />
             {!collapsed && <span className="ml-2">Sign out</span>}
           </Button>
         </div>

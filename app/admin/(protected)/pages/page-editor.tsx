@@ -1760,7 +1760,11 @@ export function PageEditor({ pageId }: { pageId?: string }) {
 
       {/* DIALOG 1: "+ Add Content Block" Picker (Upgraded Modern UI) */}
       <Dialog open={addContentDialogOpen} onOpenChange={setAddContentDialogOpen}>
-        <DialogContent className="max-w-lg w-full p-6 rounded-2xl border border-border shadow-2xl bg-card">
+        <DialogContent
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
+          className="max-w-lg w-full p-6 rounded-2xl border border-border shadow-2xl bg-card"
+        >
           <DialogHeader className="pb-4 border-b border-border/80">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 grid place-items-center border border-blue-500/20 shrink-0 shadow-2xs">
@@ -1912,7 +1916,11 @@ export function PageEditor({ pageId }: { pageId?: string }) {
 
       {/* DIALOG 2: Custom HTML + CSS + JS Block Editor */}
       <Dialog open={htmlBlockDialogOpen} onOpenChange={setHtmlBlockDialogOpen}>
-        <DialogContent className="max-w-3xl w-full p-6 rounded-2xl border border-border shadow-2xl bg-card">
+        <DialogContent
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
+          className="max-w-3xl w-full p-6 rounded-2xl border border-border shadow-2xl bg-card"
+        >
           <DialogHeader className="pb-3 border-b border-border">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
@@ -2124,7 +2132,11 @@ export function PageEditor({ pageId }: { pageId?: string }) {
 
       {/* DIALOG 3: Lead Sources Form Selector & New Form Creator */}
       <Dialog open={formBlockDialogOpen} onOpenChange={setFormBlockDialogOpen}>
-        <DialogContent className="max-w-lg w-full p-6 rounded-2xl border border-border shadow-2xl bg-card">
+        <DialogContent
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
+          className="max-w-lg w-full p-6 rounded-2xl border border-border shadow-2xl bg-card"
+        >
           <DialogHeader className="pb-3 border-b border-border">
             <DialogTitle className="text-base font-bold flex items-center gap-2">
               <FormInput className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />

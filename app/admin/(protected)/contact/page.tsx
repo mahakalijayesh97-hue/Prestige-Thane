@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Swal from 'sweetalert2';
 // @ts-ignore -- SweetAlert2's CSS file has no TypeScript module declaration.
 import 'sweetalert2/dist/sweetalert2.min.css';
@@ -37,6 +38,8 @@ import {
   Copy,
   ExternalLink,
   Filter,
+  FormInput,
+  ChevronDown,
 } from 'lucide-react';
 
 interface LeadItem {
@@ -53,12 +56,69 @@ interface LeadItem {
   created_at: string;
 }
 
+interface FormItem {
+  _id: string;
+  title: string;
+  slug: string;
+  description?: string;
+}
+
 export default function AdminContactPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-[400px] items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        </div>
+      }
+    >
+      <ContactPageContent />
+    </Suspense>
+  );
+}
+
+function ContactPageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const formQueryParam = searchParams.get('form') || '';
+
   const [leads, setLeads] = useState<LeadItem[]>([]);
+  const [forms, setForms] = useState<FormItem[]>([]);
+  const [selectedForm, setSelectedForm] = useState<string>(formQueryParam || 'all');
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState<'all' | 'unread' | 'visits' | 'chat' | 'whatsapp' | 'brochure'>('all');
   const [selectedLead, setSelectedLead] = useState<LeadItem | null>(null);
+
+  // Sync selectedForm when URL query changes
+  useEffect(() => {
+    if (formQueryParam) {
+      setSelectedForm(formQueryParam);
+    } else {
+      setSelectedForm('all');
+    }
+  }, [formQueryParam]);
+
+  // Load forms on mount
+  useEffect(() => {
+    fetch('/api/forms', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.forms) {
+          setForms(data.forms);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSelectForm = (formKey: string) => {
+    setSelectedForm(formKey);
+    if (formKey === 'all') {
+      router.push('/admin/contact');
+    } else {
+      router.push(`/admin/contact?form=${encodeURIComponent(formKey)}`);
+    }
+  };
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -289,12 +349,51 @@ export default function AdminContactPage() {
         lead.phone.includes(q) ||
         lead.email.toLowerCase().includes(q) ||
         lead.configuration.toLowerCase().includes(q) ||
+        (lead.source && lead.source.toLowerCase().includes(q)) ||
         (lead.intent && lead.intent.toLowerCase().includes(q)) ||
         (lead.notes && lead.notes.toLowerCase().includes(q));
 
       if (!matchSearch) return false;
 
-      // 2. Tab Filter
+      // 2. Form Filter
+      if (selectedForm !== 'all') {
+        const targetForm = forms.find(
+          (f) =>
+            f.slug.toLowerCase() === selectedForm.toLowerCase() ||
+            f.title.toLowerCase() === selectedForm.toLowerCase() ||
+            f._id.toLowerCase() === selectedForm.toLowerCase()
+        );
+        const lSource = (lead.source || '').toLowerCase().trim();
+        const lNotes = (lead.notes || '').toLowerCase().trim();
+        const lIntent = (lead.intent || '').toLowerCase().trim();
+
+        if (targetForm) {
+          const tTitle = targetForm.title.toLowerCase().trim();
+          const tSlug = targetForm.slug.toLowerCase().trim();
+          const tId = targetForm._id.toLowerCase().trim();
+          const matches =
+            lSource === tTitle ||
+            lSource === tSlug ||
+            lSource === tId ||
+            lSource.includes(tSlug) ||
+            lSource.includes(tTitle) ||
+            lNotes.includes(tSlug) ||
+            lNotes.includes(tTitle) ||
+            lIntent.includes(tSlug) ||
+            lIntent.includes(tTitle);
+          if (!matches) return false;
+        } else {
+          const sLower = selectedForm.toLowerCase().trim();
+          const matches =
+            lSource === sLower ||
+            lSource.includes(sLower) ||
+            lNotes.includes(sLower) ||
+            lIntent.includes(sLower);
+          if (!matches) return false;
+        }
+      }
+
+      // 3. Tab Filter
       if (activeFilter === 'unread') return !lead.is_read;
       if (activeFilter === 'visits') {
         const text = ((lead.intent || '') + ' ' + (lead.source || '')).toLowerCase();
@@ -315,13 +414,13 @@ export default function AdminContactPage() {
 
       return true;
     });
-  }, [leads, search, activeFilter]);
+  }, [leads, search, activeFilter, selectedForm, forms]);
 
   // Reset page when filter or search changes
   useEffect(() => {
     setCurrentPage(1);
     setSelectedIds([]);
-  }, [search, activeFilter, pageSize]);
+  }, [search, activeFilter, pageSize, selectedForm]);
 
   // Pagination calculations
   const totalPages = Math.max(1, Math.ceil(filteredLeads.length / pageSize));
@@ -438,6 +537,56 @@ export default function AdminContactPage() {
         </div>
       </div>
 
+      {/* Active Form Filter Banner */}
+      {selectedForm !== 'all' && (
+        <div className="bg-gradient-to-r from-teal-50 via-emerald-50 to-blue-50 border border-teal-200/90 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 shadow-2xs">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-teal-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+              <FormInput className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-bold text-teal-900 uppercase tracking-wider">
+                  Filtered by Form:
+                </span>
+                <span className="inline-flex items-center gap-1 text-xs font-extrabold text-teal-800 bg-white px-3 py-1 rounded-full border border-teal-200 shadow-2xs">
+                  {forms.find((f) => f.slug.toLowerCase() === selectedForm.toLowerCase() || f.title.toLowerCase() === selectedForm.toLowerCase() || f._id === selectedForm)?.title || selectedForm}
+                </span>
+                <span className="text-[11px] text-teal-700 font-bold bg-teal-100/80 px-2 py-0.5 rounded-full">
+                  {filteredLeads.length} {filteredLeads.length === 1 ? 'Inquiry' : 'Inquiries'}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                Displaying only messages submitted through this specific form/modal.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/admin/forms${(() => {
+                const fMatch = forms.find((f) => f.slug.toLowerCase() === selectedForm.toLowerCase() || f.title.toLowerCase() === selectedForm.toLowerCase() || f._id === selectedForm);
+                return fMatch ? `/${fMatch._id}` : '';
+              })()}`}
+              className="px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition shadow-2xs"
+              title="Configure this form in Forms & Modals"
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500" />
+              <span>Configure Form</span>
+            </Link>
+            <button
+              type="button"
+              onClick={() => handleSelectForm('all')}
+              className="px-3.5 py-2 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer shadow-2xs active:scale-95"
+              title="Clear form filter"
+            >
+              <X className="w-3.5 h-3.5" />
+              <span>Show All Messages</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 4 Interactive KPI Stat Cards (Clickable filter shortcuts) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Inquiries */}
@@ -531,8 +680,42 @@ export default function AdminContactPage() {
           )}
         </div>
 
-        {/* Filter Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0">
+        {/* Form Selector Dropdown & Filter Pills */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          {forms.length > 0 && (
+            <div className="relative shrink-0">
+              <select
+                value={selectedForm}
+                onChange={(e) => handleSelectForm(e.target.value)}
+                aria-label="Filter messages by form"
+                className="pl-8 pr-7 py-1.5 rounded-xl text-xs font-semibold bg-white border border-slate-200/90 text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition cursor-pointer appearance-none shadow-2xs"
+              >
+                <option value="all">All Forms ({leads.length})</option>
+                {forms.map((f) => {
+                  const formSlug = f.slug || f.title;
+                  const countForForm = leads.filter((l) => {
+                    const src = (l.source || '').toLowerCase();
+                    return (
+                      src === f.title.toLowerCase() ||
+                      src === f.slug.toLowerCase() ||
+                      src.includes(f.slug.toLowerCase()) ||
+                      src.includes(f.title.toLowerCase())
+                    );
+                  }).length;
+                  return (
+                    <option key={f._id} value={formSlug}>
+                      {f.title} ({countForForm})
+                    </option>
+                  );
+                })}
+              </select>
+              <FormInput className="w-3.5 h-3.5 text-teal-600 absolute left-2.5 top-2 pointer-events-none" />
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2 top-2 pointer-events-none" />
+            </div>
+          )}
+
+          {/* Filter Pills */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0">
           {(
             [
               { key: 'all', label: 'All Inquiries', count: totalCount },
@@ -566,6 +749,7 @@ export default function AdminContactPage() {
           ))}
         </div>
       </div>
+    </div>
 
       {/* Bulk Action Bar (Visible when rows are selected) */}
       {selectedIds.length > 0 && (
@@ -783,6 +967,21 @@ export default function AdminContactPage() {
                               <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-bold border border-slate-200/80">
                                 {lead.configuration}
                               </span>
+                            )}
+
+                            {lead.source && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSelectForm(lead.source);
+                                }}
+                                title={`Click to filter inquiries from form: ${lead.source}`}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 text-[10px] font-bold transition cursor-pointer"
+                              >
+                                <FormInput className="w-3 h-3 text-teal-600 shrink-0" />
+                                <span className="truncate max-w-[130px]">{lead.source}</span>
+                              </button>
                             )}
                           </div>
 
@@ -1021,11 +1220,26 @@ export default function AdminContactPage() {
               )}
               <div>
                 <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
-                  Source Channel
+                  Source Form
                 </span>
-                <span className="font-semibold text-slate-700 mt-0.5 inline-block">
-                  {selectedLead.source || 'Website'}
-                </span>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="font-bold text-slate-800 truncate">
+                    {selectedLead.source || 'Website Lead'}
+                  </span>
+                  {selectedLead.source && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleSelectForm(selectedLead.source);
+                        setSelectedLead(null);
+                      }}
+                      className="text-[10px] text-teal-700 hover:text-teal-900 bg-teal-50 hover:bg-teal-100 border border-teal-200 px-1.5 py-0.5 rounded font-bold cursor-pointer transition shrink-0"
+                      title="Filter inquiries by this form"
+                    >
+                      Filter
+                    </button>
+                  )}
+                </div>
               </div>
               <div>
                 <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">

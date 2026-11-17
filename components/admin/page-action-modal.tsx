@@ -34,6 +34,7 @@ import {
   FormInput,
   Layers,
   ArrowRight,
+  Link2,
 } from 'lucide-react';
 
 export interface PageSummary {
@@ -164,7 +165,7 @@ export function PageActionModal({
   }, [open, isNewPageMode, targetEditId, activePages]);
 
   const liveRelativeUrl = isNewPageMode
-    ? '/admin/pages/new'
+    ? '/'
     : currentPage
     ? currentPage.is_homepage || currentPage.slug === 'home'
       ? '/'
@@ -199,7 +200,11 @@ export function PageActionModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl w-full p-6 rounded-2xl border border-border shadow-2xl bg-card">
+      <DialogContent
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+        className="max-w-xl w-full p-6 rounded-2xl border border-border shadow-2xl bg-card"
+      >
         {/* Modal Header */}
         <DialogHeader className="pb-3 border-b border-border/80">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -359,8 +364,8 @@ export function PageActionModal({
                 </div>
               </div>
 
-              {/* Action Buttons: 3 Options */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+              {/* Action Buttons: 4 Options */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
                 {/* 1. Flex Page Builder */}
                 <Button
                   asChild
@@ -373,7 +378,20 @@ export function PageActionModal({
                   </Link>
                 </Button>
 
-                {/* 2. Raw HTML Editor */}
+                {/* 2. Open Link Page */}
+                <Button
+                  asChild
+                  variant="outline"
+                  size="default"
+                  className="h-11 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 font-semibold text-xs gap-2 shadow-sm"
+                >
+                  <Link href="/admin/open-links" onClick={() => onOpenChange(false)}>
+                    <Link2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                    <span>Open Link</span>
+                  </Link>
+                </Button>
+
+                {/* 3. Raw HTML Editor */}
                 <Button
                   asChild
                   size="default"
@@ -386,7 +404,7 @@ export function PageActionModal({
                   </Link>
                 </Button>
                 
-                {/* 3. Configure Lead Forms */}
+                {/* 4. Configure Lead Forms */}
                 <Button
                   asChild
                   variant="outline"
@@ -394,7 +412,7 @@ export function PageActionModal({
                   className="h-11 border-border hover:bg-accent font-semibold text-xs gap-2"
                 >
                   <Link href="/admin/forms" onClick={() => onOpenChange(false)}>
-                    <FormInput className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                    <FormInput className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                     <span>Configure Forms</span>
                   </Link>
                 </Button>
@@ -460,8 +478,8 @@ export function PageActionModal({
               </div>
             </div>
 
-            {/* The 3 Main Action Buttons */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {/* The Main Action Buttons */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
               {/* 1. Flex Page Button */}
               <Button
                 asChild
@@ -478,15 +496,20 @@ export function PageActionModal({
                 </Link>
               </Button>
 
-              {/* 2. Open Live Link */}
+              {/* 2. Open Link Page */}
               <Button
-                type="button"
+                asChild
                 variant="outline"
-                onClick={handleOpenLink}
-                className="h-11 flex items-center justify-center gap-2 font-semibold text-xs border-border hover:bg-accent"
+                className="h-11 flex items-center justify-center gap-2 font-semibold text-xs border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 shadow-2xs"
               >
-                <ExternalLink className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                <span>Open Link</span>
+                <Link
+                  href="/admin/open-links"
+                  onClick={() => onOpenChange(false)}
+                  title="Open Link manager page"
+                >
+                  <Link2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  <span>Open Link</span>
+                </Link>
               </Button>
 
               {/* 3. Raw HTML Button */}
@@ -503,6 +526,18 @@ export function PageActionModal({
                   <Code2 className="h-4 w-4 text-purple-600 dark:text-purple-400" />
                   <span>Raw HTML</span>
                 </Link>
+              </Button>
+
+              {/* 4. Live View Link */}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleOpenLink}
+                className="h-11 flex items-center justify-center gap-2 font-semibold text-xs border-border hover:bg-accent text-foreground"
+                title={`Open live site url: ${liveRelativeUrl}`}
+              >
+                <ExternalLink className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <span>Live View</span>
               </Button>
             </div>
 
