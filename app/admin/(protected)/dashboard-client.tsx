@@ -2,27 +2,34 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { getSupabaseBrowser } from '@/lib/supabase/browser';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
-  Activity,
   FileText,
-  Mail,
-  Newspaper,
-  Eye,
-  TrendingUp,
-  Star,
-  MapPin,
-  IndianRupee,
-  Home,
-  Calendar,
-  TreePine,
-  Building2,
+  Link2,
+  Users,
+  FormInput,
+  ImageIcon,
   Compass,
-  Award,
+  ArrowUpRight,
+  Plus,
+  RefreshCw,
   ExternalLink,
-  Settings,
+  Pencil,
+  Clock,
+  Phone,
+  Mail,
+  CheckCircle2,
+  Activity,
   Sparkles,
+  BarChart3,
+  PieChart as PieIcon,
+  Layers,
+  ChevronRight,
+  ShieldCheck,
+  TrendingUp,
+  Globe,
 } from 'lucide-react';
 import {
   BarChart,
@@ -38,426 +45,535 @@ import {
   Legend,
 } from 'recharts';
 
-interface Stats {
-  pages: number;
-  posts: number;
-  messages: number;
-  unread: number;
+interface DashboardStats {
+  totalPages: number;
+  publishedPages: number;
+  draftPages: number;
+  totalOpenLinks: number;
+  totalLeads: number;
+  unreadLeads: number;
+  totalForms: number;
+  totalMedia: number;
+  totalNavItems: number;
 }
 
-interface RecentItem {
+interface RecentPage {
   id: string;
-  action: string;
-  entity: string | null;
-  details: string | null;
-  admin_email: string | null;
+  title: string;
+  slug: string;
+  status: string;
+  is_homepage: boolean;
+  updated_at: string;
+}
+
+interface RecentLead {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  configuration: string;
+  intent: string;
+  is_read: boolean;
   created_at: string;
 }
 
-interface ProjectInfo {
-  project_title: string;
-  project_category: string;
-  project_subtitle: string;
-  project_location: string;
-  project_description: string;
-  project_starting_price: string;
-  project_configuration: string;
-  project_possession: string;
-  project_rera: string;
-  project_developer: string;
-  project_tagline: string;
-  project_hero_image: string;
-}
-
-const DEFAULT_PROJECT_INFO: ProjectInfo = {
-  project_title: 'Prestige Thane',
-  project_category: 'PRE-LAUNCH LUXURY TOWNSHIP',
-  project_subtitle: 'Luxury Living in the Heart of Thane',
-  project_location: 'Balkum, Kapurbawadi, Thane West, Maharashtra',
-  project_description:
-    'Experience ultra-premium 2, 3 & 4 BHK residences set across 30+ acres of lush green landscapes. Thoughtfully designed homes with world-class amenities, exceptional connectivity, and the trust of Prestige Group.',
-  project_starting_price: '₹1.59 Cr*',
-  project_configuration: '2, 3 & 4 BHK',
-  project_possession: 'Dec 2028',
-  project_rera: 'MAHARERA: AWAITING RERA',
-  project_developer: 'BY PRESTIGE GROUP',
-  project_tagline: 'Live the Prestige Life',
-  project_hero_image: '/assets/prestige-hero-bg.webp',
-};
-
-const PIE_COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444'];
-
-/* ─── Prestige Eagle Emblem & Header Logo ─── */
-function PrestigeShowcaseLogo() {
-  return (
-    <div className="flex items-center gap-3 select-none">
-      <svg
-        viewBox="0 0 100 65"
-        className="w-10 h-8 text-[#C59137] shrink-0 drop-shadow-sm"
-        fill="currentColor"
-        aria-hidden="true"
-      >
-        <path d="M50 8 C42 16, 28 20, 10 24 C18 29, 28 32, 38 33 C30 37, 20 42, 14 48 C24 47, 34 44, 42 40 C38 46, 32 54, 26 60 C36 56, 44 49, 49 41 C50 44, 50 48, 51 52 C53 47, 55 42, 55 37 C60 45, 68 53, 78 58 C72 52, 66 45, 62 39 C70 43, 80 46, 90 47 C84 41, 74 36, 66 32 C76 31, 86 28, 94 23 C76 19, 62 15, 54 7 Z" />
-      </svg>
-      <div className="flex flex-col leading-none">
-        <span className="font-serif text-2xl font-bold tracking-tight text-slate-900">
-          Prestige
-        </span>
-        <span className="text-[9px] font-bold tracking-[0.2em] text-[#C59137] uppercase mt-0.5">
-          GROUP
-        </span>
-        <span className="text-[7.5px] text-slate-500 tracking-wider mt-0.5">
-          Add Prestige to your life
-        </span>
-      </div>
-    </div>
-  );
-}
-
-let cachedDashboardStats: Stats | null = null;
-let cachedDashboardRecent: RecentItem[] = [];
-let cachedStatusData: { name: string; value: number }[] = [];
-let cachedBarData: { name: string; value: number }[] = [];
-let cachedProjectInfo: ProjectInfo = DEFAULT_PROJECT_INFO;
+const PIE_COLORS = ['#10b981', '#f59e0b', '#3b82f6', '#8b5cf6'];
 
 export default function DashboardClient() {
-  const [stats, setStats] = useState<Stats | null>(() => cachedDashboardStats);
-  const [recent, setRecent] = useState<RecentItem[]>(() => cachedDashboardRecent);
-  const [statusData, setStatusData] = useState<{ name: string; value: number }[]>(() => cachedStatusData);
-  const [barData, setBarData] = useState<{ name: string; value: number }[]>(() => cachedBarData);
-  const [projectInfo, setProjectInfo] = useState<ProjectInfo>(() => cachedProjectInfo);
-  const [loading, setLoading] = useState(() => !cachedDashboardStats);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [recentPages, setRecentPages] = useState<RecentPage[]>([]);
+  const [recentLeads, setRecentLeads] = useState<RecentLead[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    const supabase = getSupabaseBrowser();
-    (async () => {
-      // 1. Fetch project info from theme settings
-      try {
-        const themeRes = await fetch('/api/settings/theme', { cache: 'no-store' });
-        if (themeRes.ok) {
-          const themeJson = await themeRes.json();
-          setProjectInfo({
-            project_title: themeJson.project_title || DEFAULT_PROJECT_INFO.project_title,
-            project_category: themeJson.project_category || DEFAULT_PROJECT_INFO.project_category,
-            project_subtitle: themeJson.project_subtitle || DEFAULT_PROJECT_INFO.project_subtitle,
-            project_location: themeJson.project_location || DEFAULT_PROJECT_INFO.project_location,
-            project_description:
-              themeJson.project_description || DEFAULT_PROJECT_INFO.project_description,
-            project_starting_price:
-              themeJson.project_starting_price || DEFAULT_PROJECT_INFO.project_starting_price,
-            project_configuration:
-              themeJson.project_configuration || DEFAULT_PROJECT_INFO.project_configuration,
-            project_possession:
-              themeJson.project_possession || DEFAULT_PROJECT_INFO.project_possession,
-            project_rera: themeJson.project_rera || DEFAULT_PROJECT_INFO.project_rera,
-            project_developer:
-              themeJson.project_developer || DEFAULT_PROJECT_INFO.project_developer,
-            project_tagline: themeJson.project_tagline || DEFAULT_PROJECT_INFO.project_tagline,
-            project_hero_image:
-              themeJson.project_hero_image || DEFAULT_PROJECT_INFO.project_hero_image,
-          });
-        }
-      } catch (err) {
-        console.warn('Could not load project info:', err);
-      }
-
-      // 2. Fetch Supabase stats
-      const [p, bp, cs, logs] = await Promise.all([
-        supabase.from('pages').select('id, status', { count: 'exact' }),
-        supabase.from('blog_posts').select('id, status', { count: 'exact' }),
-        supabase.from('contact_submissions').select('id, is_read', { count: 'exact' }),
-        supabase.from('activity_logs').select('*').order('created_at', { ascending: false }).limit(8),
-      ]);
-
-      const pages = (p.data as { status: string }[]) ?? [];
-      const posts = (bp.data as { status: string }[]) ?? [];
-      const subs = (cs.data as { is_read: boolean }[]) ?? [];
-
-      const newStats = {
-        pages: pages.length,
-        posts: posts.length,
-        messages: subs.length,
-        unread: subs.filter((s) => !s.is_read).length,
-      };
-      cachedDashboardStats = newStats;
-      setStats(newStats);
-
-      const newStatus = [
-        { name: 'Published pages', value: pages.filter((x) => x.status === 'published').length },
-        { name: 'Draft pages', value: pages.filter((x) => x.status === 'draft').length },
-        { name: 'Published posts', value: posts.filter((x) => x.status === 'published').length },
-        { name: 'Draft posts', value: posts.filter((x) => x.status === 'draft').length },
-      ];
-      cachedStatusData = newStatus;
-      setStatusData(newStatus);
-
-      const newBars = [
-        { name: 'Pages', value: pages.length },
-        { name: 'Posts', value: posts.length },
-        { name: 'Messages', value: subs.length },
-      ];
-      cachedBarData = newBars;
-      setBarData(newBars);
-
-      const recentItems = (logs.data as RecentItem[]) ?? [];
-      cachedDashboardRecent = recentItems;
-      setRecent(recentItems);
-      setLoading(false);
-    })();
+    loadDashboardData();
   }, []);
 
-  if (loading) return <div className="text-muted-foreground p-8">Loading Prestige Admin Dashboard...</div>;
+  async function loadDashboardData() {
+    try {
+      const res = await fetch('/api/dashboard/stats', { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        setStats(data.stats);
+        setRecentPages(data.recentPages || []);
+        setRecentLeads(data.recentLeads || []);
+      }
+    } catch (err) {
+      console.error('Failed to load dashboard data:', err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }
 
-  const cards = [
-    { label: 'Total Pages', value: stats?.pages ?? 0, icon: FileText, color: 'text-primary' },
-    { label: 'Blog Posts', value: stats?.posts ?? 0, icon: Newspaper, color: 'text-success' },
-    { label: 'Messages / Inquiries', value: stats?.messages ?? 0, icon: Mail, color: 'text-warning' },
-    { label: 'Unread Leads', value: stats?.unread ?? 0, icon: Eye, color: 'text-destructive' },
+  function handleRefresh() {
+    setRefreshing(true);
+    loadDashboardData();
+  }
+
+  // Chart data
+  const contentBarData = [
+    { name: 'Pages', count: stats?.totalPages ?? 0 },
+    { name: 'Links', count: stats?.totalOpenLinks ?? 0 },
+    { name: 'Forms', count: stats?.totalForms ?? 0 },
+    { name: 'Media', count: stats?.totalMedia ?? 0 },
+    { name: 'Leads', count: stats?.totalLeads ?? 0 },
   ];
 
+  const pageStatusPieData = [
+    { name: 'Published', value: stats?.publishedPages ?? 0 },
+    { name: 'Draft', value: stats?.draftPages ?? 0 },
+  ].filter((item) => item.value > 0);
+
+  if (loading) {
+    return (
+      <div className="flex h-96 items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground font-medium">Loading live dashboard metrics...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-8">
-      {/* ───────────────── PRESTIGE THANE SHOWCASE HERO BANNER ───────────────── */}
-      <div className="relative rounded-3xl overflow-hidden border border-border shadow-xl bg-slate-950 text-slate-900">
-        {/* Background Property Visual with Luxury Gradient Overlay */}
-        <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-all duration-700"
-          style={{
-            backgroundImage: `url('${projectInfo.project_hero_image || '/assets/prestige-hero-bg.webp'}')`,
-          }}
-        />
-        {/* Gradients matching image */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-white/95" />
-        <div className="absolute inset-0 bg-amber-900/10 mix-blend-overlay" />
-
-        {/* Content Container */}
-        <div className="relative z-10 p-6 sm:p-8 xl:p-10 flex flex-col justify-between min-h-[380px]">
-          {/* Top Row: Prestige Logo, RERA badge & Quick Action Links */}
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <PrestigeShowcaseLogo />
-              {/* RERA Badge Pill */}
-              <div className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-amber-300/80 bg-white/90 backdrop-blur-md px-3.5 py-1 text-xs font-semibold text-amber-900 shadow-sm">
-                <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
-                <span className="tracking-wide">{projectInfo.project_rera}</span>
-                <span className="text-amber-300">|</span>
-                <span className="text-slate-600">{projectInfo.project_developer}</span>
-              </div>
-            </div>
-
-            {/* Quick Action Buttons */}
-            <div className="flex items-center gap-2">
-              <Link
-                href="/"
-                target="_blank"
-                className="inline-flex items-center gap-1.5 rounded-xl bg-white/90 hover:bg-white text-slate-800 px-3.5 py-1.5 text-xs font-semibold shadow-sm transition-all backdrop-blur-md border border-slate-200"
-              >
-                <ExternalLink className="h-3.5 w-3.5 text-slate-600" />
-                <span>View Live Site</span>
-              </Link>
-              <Link
-                href="/admin/settings"
-                className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#B87D28] to-[#C98B32] hover:opacity-90 text-white px-3.5 py-1.5 text-xs font-semibold shadow-sm transition-all"
-              >
-                <Settings className="h-3.5 w-3.5" />
-                <span>Edit Project Info</span>
-              </Link>
-            </div>
-          </div>
-
-          {/* Center: Prestige Project Info */}
-          <div className="my-auto py-4 max-w-2xl">
-            <span className="text-[11px] font-bold tracking-[0.25em] text-[#B87D28] uppercase">
-              {projectInfo.project_category}
-            </span>
-            <h2 className="mt-1.5 text-3xl sm:text-4xl xl:text-5xl font-extrabold tracking-tight text-slate-900 font-serif">
-              {projectInfo.project_title}
-            </h2>
-            <p className="mt-1 text-lg sm:text-xl font-medium text-slate-800">
-              {projectInfo.project_subtitle}
-            </p>
-            <div className="mt-2 flex items-center gap-1.5 text-xs sm:text-sm text-slate-700">
-              <MapPin className="h-4 w-4 text-[#C59137] shrink-0" />
-              <span>{projectInfo.project_location}</span>
-            </div>
-            <p className="mt-2.5 text-xs sm:text-sm text-slate-700 leading-relaxed max-w-xl">
-              {projectInfo.project_description}
-            </p>
-
-            {/* 3 KPI Feature Cards (Starting Price, Configuration, Possession) */}
-            <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3 rounded-2xl bg-white/95 backdrop-blur-md p-3.5 shadow-xl border border-white/60 max-w-xl">
-              {/* Card 1: Starting Price */}
-              <div className="flex items-center gap-2.5">
-                <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-amber-50 text-[#B87D28] border border-amber-200">
-                  <IndianRupee className="h-4 w-4" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500">
-                    Starting Price
-                  </span>
-                  <span className="text-sm sm:text-base font-extrabold text-slate-900">
-                    {projectInfo.project_starting_price}
-                  </span>
-                </div>
-              </div>
-
-              {/* Card 2: Configuration */}
-              <div className="flex items-center gap-2.5 sm:border-l border-slate-200/80 sm:pl-3">
-                <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-amber-50 text-[#B87D28] border border-amber-200">
-                  <Home className="h-4 w-4" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500">
-                    Configuration
-                  </span>
-                  <span className="text-sm sm:text-base font-extrabold text-slate-900">
-                    {projectInfo.project_configuration}
-                  </span>
-                </div>
-              </div>
-
-              {/* Card 3: Possession */}
-              <div className="flex items-center gap-2.5 sm:border-l border-slate-200/80 sm:pl-3">
-                <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-amber-50 text-[#B87D28] border border-amber-200">
-                  <Calendar className="h-4 w-4" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500">
-                    Possession
-                  </span>
-                  <span className="text-sm sm:text-base font-extrabold text-slate-900">
-                    {projectInfo.project_possession}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* 4 Feature Badges in a Row */}
-            <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2 text-center max-w-xl">
-              <div className="flex flex-col items-center gap-1 p-2 rounded-xl bg-white/70 backdrop-blur-sm">
-                <TreePine className="h-4 w-4 text-[#B87D28]" />
-                <span className="text-[10px] font-semibold text-slate-800">Green Landscapes</span>
-              </div>
-              <div className="flex flex-col items-center gap-1 p-2 rounded-xl bg-white/70 backdrop-blur-sm">
-                <Building2 className="h-4 w-4 text-[#B87D28]" />
-                <span className="text-[10px] font-semibold text-slate-800">World-Class Amenities</span>
-              </div>
-              <div className="flex flex-col items-center gap-1 p-2 rounded-xl bg-white/70 backdrop-blur-sm">
-                <Compass className="h-4 w-4 text-[#B87D28]" />
-                <span className="text-[10px] font-semibold text-slate-800">Excellent Connectivity</span>
-              </div>
-              <div className="flex flex-col items-center gap-1 p-2 rounded-xl bg-white/70 backdrop-blur-sm">
-                <Award className="h-4 w-4 text-[#B87D28]" />
-                <span className="text-[10px] font-semibold text-slate-800">Trusted Prestige Group</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom Row */}
-          <div className="pt-2 flex items-center justify-between">
-            <p className="font-serif italic text-amber-200/90 text-base sm:text-lg drop-shadow-md">
-              {projectInfo.project_tagline}
-            </p>
-            <span className="text-[11px] text-slate-300">
-              CMS Admin Workspace
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* ───────────────── CMS CONTENT OVERVIEW METRICS ───────────────── */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
+    <div className="space-y-8 pb-16">
+      {/* ───────────────── HEADER: WELCOME & QUICK ACTIONS ───────────────── */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border/80 pb-6">
         <div>
-          <h2 className="text-xl font-bold tracking-tight">Content &amp; Lead Overview</h2>
-          <p className="text-xs text-muted-foreground">Real-time statistics across pages, posts, and customer enquiries.</p>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+              Prestige Thane Dashboard
+            </h1>
+            <Badge variant="outline" className="hidden sm:inline-flex gap-1 text-[11px] font-semibold text-emerald-600 border-emerald-500/30 bg-emerald-500/10">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Live Connected
+            </Badge>
+          </div>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+            Real-time content management, lead analytics, and infrastructure overview.
+          </p>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="gap-1.5 text-xs h-9"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+            <span>Refresh</span>
+          </Button>
+
+          <Button asChild variant="outline" size="sm" className="gap-1.5 text-xs h-9">
+            <Link href="/" target="_blank">
+              <ExternalLink className="h-3.5 w-3.5" />
+              <span>View Site</span>
+            </Link>
+          </Button>
+
+          <Button asChild size="sm" className="gap-1.5 text-xs h-9 font-medium shadow-sm">
+            <Link href="/admin/pages/new">
+              <Plus className="h-3.5 w-3.5" />
+              <span>New Page</span>
+            </Link>
+          </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {cards.map((c) => {
-          const Icon = c.icon;
-          return (
-            <Card key={c.label}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">{c.label}</CardTitle>
-                <Icon className={`h-5 w-5 ${c.color}`} />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">{c.value}</div>
-              </CardContent>
-            </Card>
-          );
-        })}
+      {/* ───────────────── TOP DYNAMIC KPI STATS CARDS ───────────────── */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        {/* Total Pages */}
+        <Card className="relative overflow-hidden border border-border/80 bg-card hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Total Pages
+            </CardTitle>
+            <div className="grid h-8 w-8 place-items-center rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400">
+              <FileText className="h-4 w-4" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-extrabold text-foreground">{stats?.totalPages ?? 0}</div>
+            <div className="flex items-center gap-2 mt-2">
+              <span className="text-[11px] font-medium text-emerald-600 bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                {stats?.publishedPages ?? 0} Published
+              </span>
+              {(stats?.draftPages ?? 0) > 0 && (
+                <span className="text-[11px] font-medium text-amber-600 bg-amber-500/10 px-1.5 py-0.5 rounded">
+                  {stats?.draftPages ?? 0} Draft
+                </span>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Open Links */}
+        <Card className="relative overflow-hidden border border-border/80 bg-card hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Open Links
+            </CardTitle>
+            <div className="grid h-8 w-8 place-items-center rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+              <Link2 className="h-4 w-4" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-extrabold text-foreground">{stats?.totalOpenLinks ?? 0}</div>
+            <p className="text-[11px] text-muted-foreground mt-2">
+              Page Routes &amp; Smooth Scrollers
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Customer Leads */}
+        <Card className="relative overflow-hidden border border-border/80 bg-card hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Homebuyer Leads
+            </CardTitle>
+            <div className="grid h-8 w-8 place-items-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+              <Users className="h-4 w-4" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-extrabold text-foreground">{stats?.totalLeads ?? 0}</div>
+            <div className="mt-2">
+              {(stats?.unreadLeads ?? 0) > 0 ? (
+                <span className="text-[11px] font-semibold text-rose-600 bg-rose-500/10 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-ping" />
+                  {stats?.unreadLeads} New Inquiries
+                </span>
+              ) : (
+                <span className="text-[11px] text-muted-foreground">All inquiries reviewed</span>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Forms & Modals */}
+        <Card className="relative overflow-hidden border border-border/80 bg-card hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Forms &amp; Modals
+            </CardTitle>
+            <div className="grid h-8 w-8 place-items-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
+              <FormInput className="h-4 w-4" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-extrabold text-foreground">{stats?.totalForms ?? 0}</div>
+            <p className="text-[11px] text-muted-foreground mt-2">
+              Lead capture popup modals
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Media Assets */}
+        <Card className="relative overflow-hidden border border-border/80 bg-card hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Media Library
+            </CardTitle>
+            <div className="grid h-8 w-8 place-items-center rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400">
+              <ImageIcon className="h-4 w-4" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-extrabold text-foreground">{stats?.totalMedia ?? 0}</div>
+            <p className="text-[11px] text-muted-foreground mt-2">
+              Floor plans, banners &amp; photos
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
+      {/* ───────────────── CHARTS & VISUAL ANALYTICS ───────────────── */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
+        {/* Content Bar Chart */}
+        <Card className="lg:col-span-2 border border-border/80">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <TrendingUp className="h-4 w-4" /> Content counts
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-base font-bold flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4 text-primary" />
+                  Content Distribution
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Real-time counts of modules and data records
+                </CardDescription>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={barData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} allowDecimals={false} />
-                <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8 }} />
-                <Bar dataKey="value" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
+              <BarChart data={contentBarData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} />
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} allowDecimals={false} tickLine={false} />
+                <Tooltip
+                  cursor={{ fill: 'hsl(var(--muted)/0.3)' }}
+                  contentStyle={{
+                    background: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: 10,
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                  }}
+                />
+                <Bar dataKey="count" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} maxBarSize={45} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        <Card>
+        {/* Publication Status Donut Chart */}
+        <Card className="border border-border/80">
           <CardHeader>
-            <CardTitle className="text-base">Publish status</CardTitle>
+            <CardTitle className="text-base font-bold flex items-center gap-2">
+              <PieIcon className="h-4 w-4 text-emerald-600" />
+              Page Status
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Live vs Draft deployment status
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={260}>
-              <PieChart>
-                <Pie data={statusData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} innerRadius={45}>
-                  {statusData.map((_, i) => (
-                    <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                  ))}
-                </Pie>
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8 }} />
-              </PieChart>
-            </ResponsiveContainer>
+            {pageStatusPieData.length === 0 ? (
+              <div className="flex h-[260px] items-center justify-center text-xs text-muted-foreground">
+                No page data available
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={260}>
+                <PieChart>
+                  <Pie
+                    data={pageStatusPieData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    innerRadius={50}
+                    paddingAngle={4}
+                  >
+                    {pageStatusPieData.map((_, i) => (
+                      <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Legend wrapperStyle={{ fontSize: 12, paddingTop: 10 }} />
+                  <Tooltip
+                    contentStyle={{
+                      background: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: 10,
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Activity className="h-4 w-4" /> Recent activity
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {recent.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No activity yet.</p>
-          ) : (
-            <ul className="space-y-3">
-              {recent.map((r) => (
-                <li key={r.id} className="flex items-start gap-3 border-b border-border/60 pb-3 text-sm last:border-0 last:pb-0">
-                  <div className="mt-1 h-2 w-2 shrink-0 rounded-full bg-primary" />
-                  <div>
-                    <span className="font-medium">{r.action}</span>
-                    {r.entity && <span className="text-muted-foreground"> on {r.entity}</span>}
-                    {r.details && <span className="text-muted-foreground"> — {r.details}</span>}
-                    <div className="text-xs text-muted-foreground/80">
-                      {r.admin_email} · {new Date(r.created_at).toLocaleString()}
+      {/* ───────────────── DETAILED 2-COLUMN DYNAMIC TABLES ───────────────── */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Panel 1: Recent Leads / Enquiries */}
+        <Card className="border border-border/80 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <div>
+              <CardTitle className="text-base font-bold flex items-center gap-2">
+                <Users className="h-4 w-4 text-emerald-600" />
+                Recent Homebuyer Inquiries
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Prospective buyers requesting floor plans &amp; pricing
+              </CardDescription>
+            </div>
+            <Button asChild variant="ghost" size="sm" className="text-xs gap-1 h-8">
+              <Link href="/admin/contact">
+                <span>View all</span>
+                <ChevronRight className="h-3 w-3" />
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {recentLeads.length === 0 ? (
+              <div className="text-center py-10 text-muted-foreground text-sm">
+                No customer inquiries yet.
+              </div>
+            ) : (
+              <div className="divide-y divide-border">
+                {recentLeads.map((lead) => (
+                  <div key={lead.id} className="py-3 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-sm truncate">{lead.name}</span>
+                        {!lead.is_read && (
+                          <Badge variant="outline" className="text-[10px] py-0 text-emerald-700 bg-emerald-500/10 border-emerald-500/20">
+                            New
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                        <span className="flex items-center gap-1 font-mono">
+                          <Phone className="h-3 w-3" /> {lead.phone}
+                        </span>
+                        {lead.configuration && (
+                          <span className="font-medium text-foreground">
+                            {lead.configuration}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span className="text-[11px] text-muted-foreground font-mono">
+                        {new Date(lead.created_at).toLocaleDateString()}
+                      </span>
                     </div>
                   </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Panel 2: Recently Updated Pages */}
+        <Card className="border border-border/80 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <div>
+              <CardTitle className="text-base font-bold flex items-center gap-2">
+                <FileText className="h-4 w-4 text-blue-600" />
+                Recent Pages
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Live website content and section structures
+              </CardDescription>
+            </div>
+            <Button asChild variant="ghost" size="sm" className="text-xs gap-1 h-8">
+              <Link href="/admin/pages">
+                <span>View all</span>
+                <ChevronRight className="h-3 w-3" />
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {recentPages.length === 0 ? (
+              <div className="text-center py-10 text-muted-foreground text-sm">
+                No pages created yet.
+              </div>
+            ) : (
+              <div className="divide-y divide-border">
+                {recentPages.map((page) => (
+                  <div key={page.id} className="py-3 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        {page.is_homepage && (
+                          <span title="Homepage">
+                            <Globe className="h-3.5 w-3.5 text-primary shrink-0" />
+                          </span>
+                        )}
+                        <span className="font-semibold text-sm truncate">{page.title}</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground font-mono mt-0.5">
+                        /{page.slug}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Badge
+                        variant={page.status === 'published' ? 'default' : 'secondary'}
+                        className={`text-[10px] capitalize ${
+                          page.status === 'published' ? 'bg-emerald-600 hover:bg-emerald-600' : ''
+                        }`}
+                      >
+                        {page.status}
+                      </Badge>
+                      <Button asChild variant="ghost" size="sm" className="h-7 w-7 p-0">
+                        <Link href={`/admin/pages/${page.id}`}>
+                          <Pencil className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
+                        </Link>
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* ───────────────── FAST SHORTCUTS PANEL ───────────────── */}
+      <div className="pt-2">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+          Quick Navigation Shortcuts
+        </h3>
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+          <Link
+            href="/admin/pages"
+            className="flex flex-col items-center justify-center p-3.5 rounded-xl border border-border bg-card hover:bg-accent hover:border-primary/40 transition-all text-center group"
+          >
+            <FileText className="h-5 w-5 text-primary group-hover:scale-110 transition-transform mb-1.5" />
+            <span className="text-xs font-semibold">Pages</span>
+            <span className="text-[10px] text-muted-foreground">{stats?.totalPages ?? 0} items</span>
+          </Link>
+
+          <Link
+            href="/admin/open-links"
+            className="flex flex-col items-center justify-center p-3.5 rounded-xl border border-border bg-card hover:bg-accent hover:border-primary/40 transition-all text-center group"
+          >
+            <Link2 className="h-5 w-5 text-indigo-500 group-hover:scale-110 transition-transform mb-1.5" />
+            <span className="text-xs font-semibold">Open Links</span>
+            <span className="text-[10px] text-muted-foreground">{stats?.totalOpenLinks ?? 0} links</span>
+          </Link>
+
+          <Link
+            href="/admin/forms"
+            className="flex flex-col items-center justify-center p-3.5 rounded-xl border border-border bg-card hover:bg-accent hover:border-primary/40 transition-all text-center group"
+          >
+            <FormInput className="h-5 w-5 text-amber-500 group-hover:scale-110 transition-transform mb-1.5" />
+            <span className="text-xs font-semibold">Forms</span>
+            <span className="text-[10px] text-muted-foreground">{stats?.totalForms ?? 0} forms</span>
+          </Link>
+
+          <Link
+            href="/admin/nav"
+            className="flex flex-col items-center justify-center p-3.5 rounded-xl border border-border bg-card hover:bg-accent hover:border-primary/40 transition-all text-center group"
+          >
+            <Compass className="h-5 w-5 text-blue-500 group-hover:scale-110 transition-transform mb-1.5" />
+            <span className="text-xs font-semibold">Navbar</span>
+            <span className="text-[10px] text-muted-foreground">{stats?.totalNavItems ?? 0} items</span>
+          </Link>
+
+          <Link
+            href="/admin/footer"
+            className="flex flex-col items-center justify-center p-3.5 rounded-xl border border-border bg-card hover:bg-accent hover:border-primary/40 transition-all text-center group"
+          >
+            <Layers className="h-5 w-5 text-slate-500 group-hover:scale-110 transition-transform mb-1.5" />
+            <span className="text-xs font-semibold">Footer</span>
+            <span className="text-[10px] text-muted-foreground">Columns &amp; Links</span>
+          </Link>
+
+          <Link
+            href="/admin/media"
+            className="flex flex-col items-center justify-center p-3.5 rounded-xl border border-border bg-card hover:bg-accent hover:border-primary/40 transition-all text-center group"
+          >
+            <ImageIcon className="h-5 w-5 text-purple-500 group-hover:scale-110 transition-transform mb-1.5" />
+            <span className="text-xs font-semibold">Media</span>
+            <span className="text-[10px] text-muted-foreground">{stats?.totalMedia ?? 0} files</span>
+          </Link>
+
+          <Link
+            href="/admin/contact"
+            className="flex flex-col items-center justify-center p-3.5 rounded-xl border border-border bg-card hover:bg-accent hover:border-primary/40 transition-all text-center group"
+          >
+            <Mail className="h-5 w-5 text-emerald-500 group-hover:scale-110 transition-transform mb-1.5" />
+            <span className="text-xs font-semibold">Inquiries</span>
+            <span className="text-[10px] text-muted-foreground">{stats?.totalLeads ?? 0} leads</span>
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }
