@@ -38,6 +38,20 @@ export default async function HomePage() {
 
   return (
     <div>
+      {homePage?.hide_from_nav && (
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+              #site-navbar,
+              .site-navbar,
+              header.sticky,
+              header[class*="sticky"] {
+                display: none !important;
+              }
+            `,
+          }}
+        />
+      )}
       {/* Homepage Content (rendered dynamically from Pages -> Home or instant fallback) */}
       <CustomPageRenderer content={renderedContent} className="w-full" priority={true} />
 

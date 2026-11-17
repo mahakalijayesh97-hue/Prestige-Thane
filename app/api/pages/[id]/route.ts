@@ -32,6 +32,8 @@ export async function GET(
       // Try to find if slug matches id or if it's homepage
       if (id === '00000000-0000-0000-0000-000000000010' || id === 'home') {
         doc = await PageModel.findOne({ $or: [{ is_homepage: true }, { slug: 'home' }] }).lean();
+      } else {
+        doc = await PageModel.findOne({ slug: id }).lean();
       }
     }
 
@@ -52,6 +54,18 @@ export async function GET(
       hero_image: doc.hero_image,
       is_homepage: doc.is_homepage,
       sort_order: doc.sort_order,
+      enable_tailwind_cdn: !!(doc as any).enable_tailwind_cdn,
+      custom_css: (doc as any).custom_css ?? '',
+      custom_js: (doc as any).custom_js ?? '',
+      blocks: (doc as any).blocks ?? [],
+      override_global_title: !!(doc as any).override_global_title,
+      head_scripts: (doc as any).head_scripts ?? '',
+      hide_from_nav: !!(doc as any).hide_from_nav,
+      hide_from_sitemap: !!(doc as any).hide_from_sitemap,
+      no_index: !!(doc as any).no_index,
+      no_follow: !!(doc as any).no_follow,
+      change_frequency: (doc as any).change_frequency ?? 'weekly',
+      sitemap_priority: (doc as any).sitemap_priority ?? 0.8,
       created_at: doc.created_at ? new Date(doc.created_at).toISOString() : new Date().toISOString(),
       updated_at: doc.updated_at ? new Date(doc.updated_at).toISOString() : new Date().toISOString(),
     };
@@ -78,7 +92,7 @@ export async function PUT(
       query = { $or: [{ _id: id }, { supabase_id: id }] };
     }
 
-    const payload = {
+    const payload: any = {
       title: body.title,
       slug: body.slug,
       status: body.status || 'published',
@@ -89,6 +103,18 @@ export async function PUT(
       hero_image: body.hero_image ?? null,
       is_homepage: !!body.is_homepage,
       sort_order: Number(body.sort_order) || 0,
+      enable_tailwind_cdn: !!body.enable_tailwind_cdn,
+      custom_css: body.custom_css ?? '',
+      custom_js: body.custom_js ?? '',
+      blocks: Array.isArray(body.blocks) ? body.blocks : [],
+      override_global_title: !!body.override_global_title,
+      head_scripts: body.head_scripts ?? '',
+      hide_from_nav: !!body.hide_from_nav,
+      hide_from_sitemap: !!body.hide_from_sitemap,
+      no_index: !!body.no_index,
+      no_follow: !!body.no_follow,
+      change_frequency: body.change_frequency || 'weekly',
+      sitemap_priority: typeof body.sitemap_priority === 'number' ? body.sitemap_priority : 0.8,
       updated_at: new Date(),
     };
 
@@ -98,12 +124,20 @@ export async function PUT(
       { new: true }
     );
 
-    if (!updated && (id === '00000000-0000-0000-0000-000000000010' || id === 'home')) {
-      updated = await PageModel.findOneAndUpdate(
-        { $or: [{ is_homepage: true }, { slug: 'home' }] },
-        { $set: payload },
-        { new: true }
-      );
+    if (!updated) {
+      if (id === '00000000-0000-0000-0000-000000000010' || id === 'home') {
+        updated = await PageModel.findOneAndUpdate(
+          { $or: [{ is_homepage: true }, { slug: 'home' }] },
+          { $set: payload },
+          { new: true }
+        );
+      } else {
+        updated = await PageModel.findOneAndUpdate(
+          { slug: id },
+          { $set: payload },
+          { new: true }
+        );
+      }
     }
 
     if (!updated) {
@@ -149,10 +183,15 @@ export async function DELETE(
       query = { $or: [{ _id: id }, { supabase_id: id }] };
     }
 
-    const docToDelete = await PageModel.findOne(query);
+    let docToDelete = await PageModel.findOne(query);
+    if (!docToDelete) {
+      docToDelete = await PageModel.findOne({ slug: id });
+    }
     const slugToDelete = docToDelete?.slug;
 
-    await PageModel.findOneAndDelete(query);
+    if (docToDelete) {
+      await PageModel.findByIdAndDelete(docToDelete._id);
+    }
 
     try {
       invalidateDataCache();

@@ -1,17 +1,32 @@
 import Link from 'next/link';
-import { getNavItems, getSettings, getGlobalThemeSettings } from '@/lib/data';
+import { getNavItems, getSettings, getGlobalThemeSettings, getPublishedPages } from '@/lib/data';
 import type { NavItem } from '@/lib/types';
 import { Phone } from 'lucide-react';
 import { MobileNav } from './mobile-nav';
 
 export async function Navbar() {
-  const [items, settings, theme] = await Promise.all([
+  const [items, settings, theme, pages] = await Promise.all([
     getNavItems(),
     getSettings(),
     getGlobalThemeSettings(),
+    getPublishedPages(),
   ]);
 
-  const activeItems = (items || []).filter((i) => i.is_active !== false);
+  const hiddenSlugs = new Set(
+    (pages || [])
+      .filter((p) => p.hide_from_nav)
+      .flatMap((p) => [
+        p.slug,
+        `/${p.slug}`,
+        `#${p.slug}`,
+        p.slug.toLowerCase(),
+        `/${p.slug.toLowerCase()}`,
+      ])
+  );
+
+  const activeItems = (items || []).filter(
+    (i) => i.is_active !== false && !hiddenSlugs.has(i.url?.trim().toLowerCase())
+  );
   const topLevel = activeItems.filter((i) => !i.parent_id).sort((a, b) => a.sort_order - b.sort_order);
   const childrenOf = (id: string) =>
     activeItems.filter((i) => i.parent_id === id).sort((a, b) => a.sort_order - b.sort_order);
@@ -23,7 +38,7 @@ export async function Navbar() {
   const showCta = theme.navbar_cta_show !== false && !!ctaText;
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/80 bg-background/85 backdrop-blur-md">
+    <header id="site-navbar" className="site-navbar sticky top-0 z-50 w-full border-b border-border/80 bg-background/85 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8 gap-4">
         {/* Left: Brand Logo & Title */}
         <Link href="/" className="flex items-center gap-2.5 shrink-0">

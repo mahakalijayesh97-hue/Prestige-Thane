@@ -32,6 +32,10 @@ export interface PageRow {
   hero_image: string | null;
   is_homepage: boolean;
   sort_order: number;
+  hide_from_nav?: boolean;
+  hide_from_sitemap?: boolean;
+  head_scripts?: string | null;
+  enable_tailwind_cdn?: boolean;
   created_at: string;
   updated_at: string;
 }

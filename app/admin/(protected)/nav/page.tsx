@@ -311,6 +311,55 @@ export default function AdminNavPage() {
     }
   }
 
+  // Move item directly to target position index
+  async function moveItemToPosition(id: string, targetIndex: number) {
+    const item = items.find((i) => i.id === id);
+    if (!item) return;
+
+    const siblings = items
+      .filter((i) => i.parent_id === item.parent_id)
+      .sort((a, b) => a.sort_order - b.sort_order);
+
+    const currentIndex = siblings.findIndex((i) => i.id === id);
+    if (
+      currentIndex === -1 ||
+      targetIndex < 0 ||
+      targetIndex >= siblings.length ||
+      currentIndex === targetIndex
+    ) {
+      return;
+    }
+
+    const reordered = [...siblings];
+    const [moved] = reordered.splice(currentIndex, 1);
+    reordered.splice(targetIndex, 0, moved);
+
+    const updates = reordered.map((p, idx) => ({
+      id: p.id,
+      sort_order: idx,
+      parent_id: p.parent_id,
+    }));
+
+    setItems((prev) =>
+      prev.map((i) => {
+        const u = updates.find((up) => up.id === i.id);
+        return u ? { ...i, sort_order: u.sort_order } : i;
+      })
+    );
+
+    notifySaved();
+
+    try {
+      await fetch('/api/nav', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: updates }),
+      });
+    } catch (err) {
+      console.error('Error updating nav order:', err);
+    }
+  }
+
   // Drag and Drop
   function handleDragStart(e: React.DragEvent, id: string) {
     setDraggedId(id);
@@ -634,10 +683,27 @@ export default function AdminNavPage() {
                           <GripVertical className="h-4 w-4" />
                         </div>
 
-                        {/* Order Badge */}
-                        <span className="grid h-7 w-7 place-items-center rounded-lg bg-muted text-xs font-black text-foreground border border-border/60">
-                          {idx + 1}
-                        </span>
+                        {/* Order Badge & Position Select */}
+                        <div className="flex items-center gap-1.5">
+                          <span className="grid h-7 w-7 place-items-center rounded-lg bg-muted text-xs font-black text-foreground border border-border/60">
+                            {idx + 1}
+                          </span>
+
+                          {topLevel.length > 1 && (
+                            <select
+                              value={idx}
+                              onChange={(e) => moveItemToPosition(item.id, Number(e.target.value))}
+                              title="Select position to move link"
+                              className="h-7 text-xs font-mono font-semibold bg-background border border-border rounded-lg px-2 text-foreground cursor-pointer hover:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary"
+                            >
+                              {topLevel.map((_, pIdx) => (
+                                <option key={pIdx} value={pIdx}>
+                                  Pos {pIdx + 1}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                        </div>
 
                         {/* Arrows */}
                         <div className="flex items-center gap-1">
@@ -753,9 +819,26 @@ export default function AdminNavPage() {
                       >
                         <CornerDownRight className="h-4 w-4 text-muted-foreground/60 shrink-0" />
                         <Card className="flex-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-2.5 bg-muted/30 border-border/60 rounded-xl">
-                          <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground shrink-0 w-fit">
-                            Sub {cIdx + 1}
-                          </span>
+                          <div className="flex items-center gap-1">
+                            <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground shrink-0 w-fit">
+                              Sub {cIdx + 1}
+                            </span>
+
+                            {children.length > 1 && (
+                              <select
+                                value={cIdx}
+                                onChange={(e) => moveItemToPosition(child.id, Number(e.target.value))}
+                                title="Select sub-item position to move"
+                                className="h-6 text-[10px] font-mono font-semibold bg-background border border-border rounded px-1 text-foreground cursor-pointer hover:border-primary/50 focus:outline-none"
+                              >
+                                {children.map((_, cpIdx) => (
+                                  <option key={cpIdx} value={cpIdx}>
+                                    {cpIdx + 1}
+                                  </option>
+                                ))}
+                              </select>
+                            )}
+                          </div>
 
                           <div className="flex items-center gap-1">
                             <button

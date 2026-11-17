@@ -79,6 +79,35 @@ export async function GET(req: NextRequest) {
   }
 }
 
+export async function PUT(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const items = body.items || body.pages;
+    if (Array.isArray(items)) {
+      await connectToDatabase();
+      for (const item of items) {
+        if (!item.id) continue;
+        const isHexId = /^[0-9a-fA-F]{24}$/.test(item.id);
+        const filter = isHexId
+          ? { $or: [{ _id: item.id }, { supabase_id: item.id }, { slug: item.id }] }
+          : { $or: [{ supabase_id: item.id }, { slug: item.id }] };
+        await PageModel.updateOne(filter, { $set: { sort_order: Number(item.sort_order) } });
+      }
+
+      try {
+        invalidateDataCache();
+        revalidatePath('/', 'layout');
+      } catch {}
+
+      return NextResponse.json({ ok: true }, { headers: NO_CACHE_HEADERS });
+    }
+    return NextResponse.json({ error: 'Invalid items array' }, { status: 400 });
+  } catch (err: unknown) {
+    console.error('Error reordering pages:', err);
+    return NextResponse.json({ error: 'Failed to reorder pages' }, { status: 500 });
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -104,6 +133,18 @@ export async function POST(req: NextRequest) {
       hero_image: body.hero_image || null,
       is_homepage: !!body.is_homepage,
       sort_order: Number(body.sort_order) || 0,
+      enable_tailwind_cdn: !!body.enable_tailwind_cdn,
+      custom_css: body.custom_css ?? '',
+      custom_js: body.custom_js ?? '',
+      blocks: Array.isArray(body.blocks) ? body.blocks : [],
+      override_global_title: !!body.override_global_title,
+      head_scripts: body.head_scripts ?? '',
+      hide_from_nav: !!body.hide_from_nav,
+      hide_from_sitemap: !!body.hide_from_sitemap,
+      no_index: !!body.no_index,
+      no_follow: !!body.no_follow,
+      change_frequency: body.change_frequency || 'weekly',
+      sitemap_priority: typeof body.sitemap_priority === 'number' ? body.sitemap_priority : 0.8,
     });
 
     try {

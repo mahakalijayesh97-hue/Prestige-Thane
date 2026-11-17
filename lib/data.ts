@@ -362,6 +362,10 @@ export async function getPublishedPage(slug: string): Promise<PageRow | null> {
         hero_image: doc.hero_image ?? null,
         is_homepage: doc.is_homepage,
         sort_order: doc.sort_order,
+        hide_from_nav: !!doc.hide_from_nav,
+        hide_from_sitemap: !!doc.hide_from_sitemap,
+        head_scripts: doc.head_scripts ?? '',
+        enable_tailwind_cdn: !!doc.enable_tailwind_cdn,
         created_at: doc.created_at ? new Date(doc.created_at).toISOString() : new Date().toISOString(),
         updated_at: doc.updated_at ? new Date(doc.updated_at).toISOString() : new Date().toISOString(),
       };
@@ -410,6 +414,10 @@ export async function getPublishedPages(): Promise<PageRow[]> {
         hero_image: doc.hero_image ?? null,
         is_homepage: doc.is_homepage,
         sort_order: doc.sort_order,
+        hide_from_nav: !!doc.hide_from_nav,
+        hide_from_sitemap: !!doc.hide_from_sitemap,
+        head_scripts: doc.head_scripts ?? '',
+        enable_tailwind_cdn: !!doc.enable_tailwind_cdn,
         created_at: doc.created_at ? new Date(doc.created_at).toISOString() : new Date().toISOString(),
         updated_at: doc.updated_at ? new Date(doc.updated_at).toISOString() : new Date().toISOString(),
       }));

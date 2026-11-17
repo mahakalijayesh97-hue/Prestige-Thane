@@ -35,19 +35,41 @@ export default async function PagePage({ params }: Props) {
   if (!page) notFound();
 
   return (
-    <article className="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
-      {page.hero_image && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={page.hero_image}
-          alt={page.title}
-          fetchPriority="high"
-          decoding="async"
-          className="mb-8 aspect-[16/7] w-full rounded-xl object-cover"
+    <>
+      {page.hide_from_nav && (
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+              #site-navbar,
+              .site-navbar,
+              header.sticky,
+              header[class*="sticky"] {
+                display: none !important;
+              }
+            `,
+          }}
         />
       )}
-      <h1 className="text-4xl font-bold tracking-tight">{page.title}</h1>
-      <CustomPageRenderer content={page.content} className="prose-content mt-6 max-w-none" />
-    </article>
+      {page.head_scripts && (
+        <div
+          style={{ display: 'none' }}
+          dangerouslySetInnerHTML={{ __html: page.head_scripts }}
+        />
+      )}
+      <article className="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
+        {page.hero_image && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={page.hero_image}
+            alt={page.title}
+            fetchPriority="high"
+            decoding="async"
+            className="mb-8 aspect-[16/7] w-full rounded-xl object-cover"
+          />
+        )}
+        <h1 className="text-4xl font-bold tracking-tight">{page.title}</h1>
+        <CustomPageRenderer content={page.content} className="prose-content mt-6 max-w-none" />
+      </article>
+    </>
   );
 }

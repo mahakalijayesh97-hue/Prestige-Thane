@@ -5,10 +5,11 @@ import Link from 'next/link';
 import { getSupabaseBrowser } from '@/lib/supabase/browser';
 import { logActivity } from '@/lib/admin';
 import { AdminHeader } from '@/components/admin/admin-header';
+import { PageActionModal } from '@/components/admin/page-action-modal';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
-import { Pencil, Plus, Trash2, Globe, FileEdit } from 'lucide-react';
+import { Pencil, Plus, Trash2, Globe, FileEdit, MoreHorizontal } from 'lucide-react';
 
 interface Row {
   id: string;
@@ -25,6 +26,8 @@ export default function AdminPagesPage() {
   const [rows, setRows] = useState<Row[]>(() => cachedPagesList || []);
   const [loading, setLoading] = useState(() => !cachedPagesList);
   const [filter, setFilter] = useState<'all' | 'published' | 'draft'>('all');
+  const [actionModalOpen, setActionModalOpen] = useState(false);
+  const [actionPageId, setActionPageId] = useState<string | null>(null);
 
   useEffect(() => {
     load();
@@ -124,8 +127,21 @@ export default function AdminPagesPage() {
                   <td className="px-4 py-3 text-muted-foreground">{new Date(r.updated_at).toLocaleDateString()}</td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          const pageKey = r.id || (r as any)._id || r.slug;
+                          setActionPageId(pageKey);
+                          setActionModalOpen(true);
+                        }}
+                        title="Quick Actions & Raw HTML"
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
                       <Button asChild variant="ghost" size="sm">
-                        <Link href={`/admin/pages/${r.id}`} prefetch={false}><Pencil className="h-4 w-4" /></Link>
+                        <Link href={`/admin/pages/${r.id || (r as any)._id || r.slug}`} prefetch={false}><Pencil className="h-4 w-4" /></Link>
                       </Button>
                       {!r.is_homepage && (
                         <Button variant="ghost" size="sm" onClick={() => remove(r.id, r.title)} className="text-destructive hover:text-destructive">
@@ -140,6 +156,14 @@ export default function AdminPagesPage() {
           </table>
         </div>
       )}
+
+      {/* Flexible Page Action & Raw HTML Modal */}
+      <PageActionModal
+        open={actionModalOpen}
+        onOpenChange={setActionModalOpen}
+        pages={rows}
+        initialPageId={actionPageId}
+      />
     </div>
   );
 }
