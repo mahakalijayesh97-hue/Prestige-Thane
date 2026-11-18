@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { logActivity } from '@/lib/admin';
 import { AdminHeader } from '@/components/admin/admin-header';
@@ -34,6 +34,10 @@ import {
   FileText,
   Phone,
   Save,
+  Search,
+  Check,
+  X,
+  ArrowRight,
 } from 'lucide-react';
 
 interface NavRow {
@@ -102,6 +106,30 @@ export default function AdminNavPage() {
   const [navbarCtaUrl, setNavbarCtaUrl] = useState('#book-site-visit');
   const [navbarCtaShow, setNavbarCtaShow] = useState(true);
   const [savingCta, setSavingCta] = useState(false);
+
+  // Select2 & combobox UI states
+  const [pageSelectOpen, setPageSelectOpen] = useState(false);
+  const [pageSearchQuery, setPageSearchQuery] = useState('');
+  const [selectedPageSlug, setSelectedPageSlug] = useState<string>('');
+  const [parentSelectOpen, setParentSelectOpen] = useState(false);
+
+  const pageDropdownRef = useRef<HTMLDivElement>(null);
+  const parentDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (pageDropdownRef.current && !pageDropdownRef.current.contains(event.target as Node)) {
+        setPageSelectOpen(false);
+      }
+      if (parentDropdownRef.current && !parentDropdownRef.current.contains(event.target as Node)) {
+        setParentSelectOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   useEffect(() => {
     loadData();
@@ -207,6 +235,10 @@ export default function AdminNavPage() {
         setNewUrl('/');
         setNewParent('');
         setNewTarget('_self');
+        setSelectedPageSlug('');
+        setPageSearchQuery('');
+        setPageSelectOpen(false);
+        setParentSelectOpen(false);
         if (json.item) {
           setItems((prev) => [...prev, json.item]);
         } else {
@@ -429,12 +461,14 @@ export default function AdminNavPage() {
   function applyPreset(preset: { label: string; url: string }) {
     setNewLabel(preset.label);
     setNewUrl(preset.url);
+    setSelectedPageSlug('');
   }
 
   // Quick page picker handler
   function applyPage(page: AvailablePage) {
     setNewLabel(page.title);
     setNewUrl(page.slug === 'home' ? '/' : `/${page.slug}`);
+    setSelectedPageSlug(page.slug);
   }
 
   const topLevel = items
@@ -445,6 +479,19 @@ export default function AdminNavPage() {
     items
       .filter((i) => i.parent_id === parentId)
       .sort((a, b) => a.sort_order - b.sort_order);
+
+  const selectedPage = pages.find(
+    (p) =>
+      p.slug === selectedPageSlug ||
+      (p.slug === 'home' && newUrl === '/') ||
+      (newUrl !== '/' && (newUrl === `/${p.slug}` || newUrl === p.slug))
+  );
+
+  const filteredPages = pages.filter(
+    (p) =>
+      p.title.toLowerCase().includes(pageSearchQuery.toLowerCase()) ||
+      p.slug.toLowerCase().includes(pageSearchQuery.toLowerCase())
+  );
 
   return (
     <div className="w-full space-y-6">
@@ -1046,28 +1093,128 @@ export default function AdminNavPage() {
               </div>
             </div>
 
-            {/* Existing Pages Quick Picker */}
+            {/* Existing Pages Quick Picker with Select2 Combobox */}
             {pages.length > 0 && (
-              <div className="space-y-1.5 pt-1 border-t border-border/60">
-                <Label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                  Pick from Created Pages
-                </Label>
+              <div className="space-y-1.5 pt-1 border-t border-border/60" ref={pageDropdownRef}>
+                <div className="flex items-center justify-between">
+                  <Label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                    <Sparkles className="h-3 w-3 text-amber-500" />
+                    Pick from Created Pages
+                  </Label>
+                  <span className="text-[10px] text-muted-foreground font-medium">
+                    {pages.length} published
+                  </span>
+                </div>
                 <div className="relative">
-                  <select
-                    onChange={(e) => {
-                      const selected = pages.find((p) => p.slug === e.target.value);
-                      if (selected) applyPage(selected);
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPageSelectOpen(!pageSelectOpen);
+                      setParentSelectOpen(false);
                     }}
-                    defaultValue=""
-                    className="w-full h-8 rounded-lg border border-input bg-background px-2.5 text-xs font-semibold text-foreground cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="w-full h-9 rounded-xl border border-input bg-background hover:bg-muted/30 px-3 text-xs font-medium text-foreground flex items-center justify-between transition shadow-2xs cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary"
                   >
-                    <option value="" disabled>Select a site page to populate...</option>
-                    {pages.map((pg) => (
-                      <option key={pg.id} value={pg.slug}>
-                        {pg.title} ({pg.slug === 'home' ? '/' : `/${pg.slug}`})
-                      </option>
-                    ))}
-                  </select>
+                    <div className="flex items-center gap-2 truncate pr-2">
+                      <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
+                      {selectedPage ? (
+                        <div className="flex items-center gap-1.5 truncate">
+                          <span className="font-semibold text-foreground truncate">{selectedPage.title}</span>
+                          <span className="text-[10px] font-mono text-muted-foreground px-1.5 py-0.5 rounded bg-muted">
+                            {selectedPage.slug === 'home' ? '/' : `/${selectedPage.slug}`}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">Select or search a site page...</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {selectedPage && (
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedPageSlug('');
+                          }}
+                          className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer"
+                        >
+                          <X className="h-3 w-3" />
+                        </span>
+                      )}
+                      <ChevronDown
+                        className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 ${
+                          pageSelectOpen ? 'rotate-180' : ''
+                        }`}
+                      />
+                    </div>
+                  </button>
+
+                  {pageSelectOpen && (
+                    <div className="absolute z-50 left-0 right-0 mt-1 rounded-xl border border-border bg-popover text-popover-foreground shadow-xl overflow-hidden animate-in fade-in-50 zoom-in-95">
+                      {/* Search Filter Input */}
+                      <div className="p-2 border-b border-border bg-muted/20">
+                        <div className="relative flex items-center">
+                          <Search className="absolute left-2.5 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                          <input
+                            type="text"
+                            value={pageSearchQuery}
+                            onChange={(e) => setPageSearchQuery(e.target.value)}
+                            placeholder="Search by title or route /slug..."
+                            className="w-full h-8 pl-8 pr-7 text-xs bg-background rounded-lg border border-border focus:outline-none focus:ring-1 focus:ring-primary text-foreground placeholder:text-muted-foreground"
+                            autoFocus
+                          />
+                          {pageSearchQuery && (
+                            <button
+                              type="button"
+                              onClick={() => setPageSearchQuery('')}
+                              className="absolute right-2 text-muted-foreground hover:text-foreground cursor-pointer"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Filtered Pages List */}
+                      <div className="max-h-56 overflow-y-auto p-1 divide-y divide-border/20">
+                        {filteredPages.length === 0 ? (
+                          <div className="py-4 text-center text-xs text-muted-foreground">
+                            No pages match &ldquo;{pageSearchQuery}&rdquo;
+                          </div>
+                        ) : (
+                          filteredPages.map((pg) => {
+                            const isSelected = selectedPage?.id === pg.id;
+                            return (
+                              <button
+                                key={pg.id}
+                                type="button"
+                                onClick={() => {
+                                  applyPage(pg);
+                                  setPageSelectOpen(false);
+                                  setPageSearchQuery('');
+                                }}
+                                className={`w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-lg text-left text-xs transition cursor-pointer ${
+                                  isSelected
+                                    ? 'bg-primary/10 text-primary font-bold'
+                                    : 'hover:bg-accent/60 text-foreground'
+                                }`}
+                              >
+                                <div className="min-w-0 flex-1">
+                                  <div className="font-semibold truncate">{pg.title}</div>
+                                  <div className="text-[10px] font-mono text-muted-foreground">
+                                    {pg.slug === 'home' ? '/' : `/${pg.slug}`}
+                                  </div>
+                                </div>
+                                {isSelected && (
+                                  <Check className="h-3.5 w-3.5 text-primary shrink-0" />
+                                )}
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -1114,38 +1261,171 @@ export default function AdminNavPage() {
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <Label htmlFor="menu-placement" className="text-xs font-bold">
+              {/* Placement Select2 Dropdown */}
+              <div className="space-y-1.5" ref={parentDropdownRef}>
+                <Label className="text-xs font-bold">
                   Placement (Dropdown Parent)
                 </Label>
-                <select
-                  id="menu-placement"
-                  value={newParent}
-                  onChange={(e) => setNewParent(e.target.value)}
-                  className="w-full h-9 rounded-lg border border-input bg-background px-2.5 text-xs font-medium text-foreground cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary"
-                >
-                  <option value="">— Top Level (Main Bar) —</option>
-                  {topLevel.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      Under &quot;{p.label}&quot; (Dropdown Sub-item)
-                    </option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setParentSelectOpen(!parentSelectOpen);
+                      setPageSelectOpen(false);
+                    }}
+                    className="w-full h-9 rounded-xl border border-input bg-background hover:bg-muted/30 px-3 text-xs font-medium text-foreground flex items-center justify-between transition shadow-2xs cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary"
+                  >
+                    <div className="flex items-center gap-2 truncate pr-2">
+                      {newParent ? (
+                        <>
+                          <CornerDownRight className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                          <span className="font-semibold truncate">
+                            Under &quot;{topLevel.find((p) => p.id === newParent)?.label || 'Parent'}&quot;
+                          </span>
+                          <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-amber-300 bg-amber-50 text-amber-800 shrink-0">
+                            Sub-item
+                          </Badge>
+                        </>
+                      ) : (
+                        <>
+                          <Navigation className="h-3.5 w-3.5 text-primary shrink-0" />
+                          <span className="font-semibold truncate">Top Level (Main Bar)</span>
+                          <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-primary/30 bg-primary/10 text-primary shrink-0">
+                            Root Level
+                          </Badge>
+                        </>
+                      )}
+                    </div>
+                    <ChevronDown
+                      className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 shrink-0 ${
+                        parentSelectOpen ? 'rotate-180' : ''
+                      }`}
+                    />
+                  </button>
+
+                  {parentSelectOpen && (
+                    <div className="absolute z-50 left-0 right-0 mt-1 rounded-xl border border-border bg-popover text-popover-foreground shadow-xl overflow-hidden p-1.5 animate-in fade-in-50 zoom-in-95">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNewParent('');
+                          setParentSelectOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-lg text-left text-xs transition cursor-pointer ${
+                          newParent === ''
+                            ? 'bg-primary/10 text-primary font-bold'
+                            : 'hover:bg-accent/60 text-foreground'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Navigation className="h-3.5 w-3.5 text-primary shrink-0" />
+                          <div>
+                            <div className="font-bold">Top Level (Main Bar)</div>
+                            <div className="text-[10px] text-muted-foreground">Direct link on primary menu</div>
+                          </div>
+                        </div>
+                        {newParent === '' && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
+                      </button>
+
+                      {topLevel.length > 0 && (
+                        <div className="mt-1.5 pt-1.5 border-t border-border/70">
+                          <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                            Or nest under dropdown item:
+                          </div>
+                          <div className="max-h-48 overflow-y-auto space-y-0.5">
+                            {topLevel.map((p) => {
+                              const isSelected = newParent === p.id;
+                              const subCount = childrenOf(p.id).length;
+                              return (
+                                <button
+                                  key={p.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setNewParent(p.id);
+                                    setParentSelectOpen(false);
+                                  }}
+                                  className={`w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-lg text-left text-xs transition cursor-pointer ${
+                                    isSelected
+                                      ? 'bg-primary/10 text-primary font-bold'
+                                      : 'hover:bg-accent/60 text-foreground'
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <FolderPlus className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                                    <div className="truncate">
+                                      <div className="font-semibold truncate">&quot;{p.label}&quot;</div>
+                                      <div className="text-[10px] text-muted-foreground font-mono">{p.url}</div>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-1.5 shrink-0">
+                                    <span className="text-[10px] text-muted-foreground font-normal">
+                                      {subCount} sub
+                                    </span>
+                                    {isSelected && <Check className="h-3.5 w-3.5 text-primary" />}
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
 
-              <div className="space-y-1">
-                <Label htmlFor="menu-target" className="text-xs font-bold">
+              {/* Enhanced Open In Selector */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold">
                   Open In
                 </Label>
-                <select
-                  id="menu-target"
-                  value={newTarget}
-                  onChange={(e) => setNewTarget(e.target.value)}
-                  className="w-full h-9 rounded-lg border border-input bg-background px-2.5 text-xs font-medium text-foreground cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary"
-                >
-                  <option value="_self">Same Tab (_self)</option>
-                  <option value="_blank">New Tab / Window (_blank ↗)</option>
-                </select>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setNewTarget('_self')}
+                    className={`flex items-center gap-2 p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                      newTarget === '_self'
+                        ? 'border-primary bg-primary/10 text-primary shadow-xs ring-1 ring-primary/30'
+                        : 'border-border bg-background hover:bg-muted/40 text-muted-foreground'
+                    }`}
+                  >
+                    <div
+                      className={`grid h-6 w-6 place-items-center rounded-lg shrink-0 ${
+                        newTarget === '_self' ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'
+                      }`}
+                    >
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-bold leading-tight truncate">Same Tab</div>
+                      <div className="text-[10px] opacity-75 font-mono">_self</div>
+                    </div>
+                    {newTarget === '_self' && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setNewTarget('_blank')}
+                    className={`flex items-center gap-2 p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                      newTarget === '_blank'
+                        ? 'border-primary bg-primary/10 text-primary shadow-xs ring-1 ring-primary/30'
+                        : 'border-border bg-background hover:bg-muted/40 text-muted-foreground'
+                    }`}
+                  >
+                    <div
+                      className={`grid h-6 w-6 place-items-center rounded-lg shrink-0 ${
+                        newTarget === '_blank' ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'
+                      }`}
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-bold leading-tight truncate">New Tab</div>
+                      <div className="text-[10px] opacity-75 font-mono">_blank ↗</div>
+                    </div>
+                    {newTarget === '_blank' && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
+                  </button>
+                </div>
               </div>
 
               <Button

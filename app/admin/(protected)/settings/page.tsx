@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
+import Link from 'next/link';
 import { getSupabaseBrowser } from '@/lib/supabase/browser';
 import { logActivity } from '@/lib/admin';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 import { SeoCrawlerManager } from '@/components/admin/seo-crawler-manager';
 import {
   Settings as SettingsIcon,
@@ -37,6 +39,11 @@ import {
   Plus,
   Users,
   UserCheck,
+  ArrowLeft,
+  ExternalLink,
+  Bot,
+  SlidersHorizontal,
+  Save,
 } from 'lucide-react';
 
 interface Settings {
@@ -139,6 +146,10 @@ export default function AdminSettingsPage() {
   const [customCss, setCustomCss] = useState(`// Add your custom CSS or JS here */\nbody { font-family: 'Inter', sans-serif; }`);
   const [customJs, setCustomJs] = useState('');
   const [headerScripts, setHeaderScripts] = useState('');
+
+  // Active Category Tab Filter
+  type SettingsTab = 'all' | 'branding' | 'contact' | 'code' | 'seo' | 'project' | 'chat';
+  const [activeTab, setActiveTab] = useState<SettingsTab>('all');
 
   // Prestige Project Showcase & Launch States
   const [projectTitle, setProjectTitle] = useState('Prestige Thane');
@@ -589,43 +600,184 @@ export default function AdminSettingsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-[1280px] space-y-6 pb-12">
-      {/* ─── PAGE HEADER ─── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-3.5">
-          <div className="h-12 w-12 rounded-2xl bg-gradient-to-tr from-[#6366F1] to-[#8B5CF6] flex items-center justify-center text-white shadow-md shadow-indigo-500/20 shrink-0">
-            <SettingsIcon className="h-6 w-6" />
+    <div className="w-full space-y-6 pb-12">
+      {/* ─── BREADCRUMBS & TOP HEADER ─── */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border/70 pb-5">
+        <div className="space-y-3">
+          {/* Breadcrumbs & Back link */}
+          <div className="flex items-center gap-2 text-xs">
+            <Link
+              href="/admin"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border/80 bg-background px-2.5 py-1 text-xs font-semibold text-muted-foreground hover:bg-accent hover:text-foreground hover:border-primary/40 transition shadow-2xs"
+            >
+              <ArrowLeft className="h-3.5 w-3.5 text-primary" />
+              <span>Back to Admin</span>
+            </Link>
+            <span className="text-muted-foreground/40">/</span>
+            <span className="text-muted-foreground font-medium">Dashboard</span>
+            <span className="text-muted-foreground/40">/</span>
+            <span className="font-semibold text-foreground">Settings &amp; Configuration</span>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Settings</h1>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Manage your site configuration, branding and custom features
-            </p>
+
+          {/* Title with Badge & Icon */}
+          <div className="flex flex-wrap items-center gap-3.5 pt-1">
+            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/10 text-indigo-600 border border-indigo-500/25 shadow-xs">
+              <SettingsIcon className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2.5">
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground leading-normal sm:leading-snug py-0.5">
+                  Settings &amp; System Features
+                </h1>
+                <Badge
+                  variant="outline"
+                  className="border-indigo-400/40 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 font-bold text-[11px] px-2.5 py-0.5 rounded-md h-fit flex items-center gap-1.5"
+                >
+                  <Sparkles className="h-3 w-3 text-indigo-500" />
+                  {s.site_name || 'Prestige Thane'}
+                </Badge>
+                {saved && (
+                  <div className="flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-0.5 text-xs font-semibold text-emerald-600 shadow-2xs animate-in fade-in dark:text-emerald-400">
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    <span>Saved &amp; Live!</span>
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Manage global site branding, color palettes, contact info, crawler files, and chat widgets.
+              </p>
+            </div>
           </div>
         </div>
 
-        <Button
-          onClick={save}
-          disabled={saving}
-          className="h-11 px-6 rounded-xl bg-gradient-to-r from-[#6366F1] via-[#7C3AED] to-[#8B5CF6] hover:from-[#4F46E5] hover:to-[#7C3AED] text-white font-medium text-xs shadow-md shadow-indigo-900/15 flex items-center gap-2 transition-all active:scale-[0.99] self-start sm:self-auto"
-        >
-          {saving ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : saved ? (
-            <CheckCircle2 className="h-4 w-4" />
-          ) : (
-            <Send className="h-3.5 w-3.5" />
-          )}
-          <span>{saved ? 'Saved Successfully' : 'Save Changes'}</span>
-        </Button>
+        {/* Global Save Action */}
+        <div className="flex items-center gap-2 self-start sm:self-center">
+          <Link
+            href="/"
+            target="_blank"
+            className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-border bg-background px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-muted transition"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+            <span>Open Website</span>
+          </Link>
+
+          <Button
+            onClick={save}
+            disabled={saving}
+            className="h-10 px-5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs shadow-sm flex items-center gap-2 transition-all active:scale-[0.99] cursor-pointer"
+          >
+            {saving ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : saved ? (
+              <CheckCircle2 className="h-4 w-4" />
+            ) : (
+              <Send className="h-3.5 w-3.5" />
+            )}
+            <span>{saved ? 'Saved Successfully' : 'Save Changes'}</span>
+          </Button>
+        </div>
+      </div>
+
+      {/* ─── KPI OVERVIEW METRICS STRIP ─── */}
+      <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-4">
+        <div className="p-4 border border-border/80 bg-card rounded-2xl shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Brand Identity</span>
+            <div className="grid h-7 w-7 place-items-center rounded-lg bg-blue-500/10 text-blue-600">
+              <Globe className="h-3.5 w-3.5" />
+            </div>
+          </div>
+          <div className="mt-2 text-lg font-extrabold text-foreground truncate">{s.site_name}</div>
+          <div className="mt-0.5 text-[11px] text-muted-foreground truncate">
+            {subSiteName ? `Phase: ${subSiteName}` : 'Main Project'}
+          </div>
+        </div>
+
+        <div className="p-4 border border-border/80 bg-card rounded-2xl shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Primary Theme</span>
+            <div
+              className="h-6 w-6 rounded-lg border border-border shadow-2xs"
+              style={{ backgroundColor: primaryColor }}
+              title={primaryColor}
+            />
+          </div>
+          <div className="mt-2 text-lg font-extrabold font-mono text-foreground uppercase">{primaryColor}</div>
+          <div className="mt-0.5 text-[11px] text-muted-foreground truncate">
+            Accent: <span className="font-mono uppercase font-semibold">{accentColor}</span>
+          </div>
+        </div>
+
+        <div className="p-4 border border-border/80 bg-card rounded-2xl shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">SEO &amp; AI Files</span>
+            <div className="grid h-7 w-7 place-items-center rounded-lg bg-purple-500/10 text-purple-600">
+              <Bot className="h-3.5 w-3.5" />
+            </div>
+          </div>
+          <div className="mt-2 text-lg font-extrabold text-foreground">3 Files Synced</div>
+          <div className="mt-0.5 text-[11px] text-muted-foreground truncate">
+            robots.txt • llms.txt • sitemap.xml
+          </div>
+        </div>
+
+        <div className="p-4 border border-border/80 bg-card rounded-2xl shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Live Chat Widget</span>
+            <div className="grid h-7 w-7 place-items-center rounded-lg bg-emerald-500/10 text-emerald-600">
+              <MessageSquare className="h-3.5 w-3.5" />
+            </div>
+          </div>
+          <div className="mt-2 text-lg font-extrabold text-foreground">
+            {advisorChatEnabled ? 'Active & Online' : 'Widget Disabled'}
+          </div>
+          <div className="mt-0.5 text-[11px] text-muted-foreground truncate">
+            {advisors.length} {advisors.length === 1 ? 'Advisor Configured' : 'Advisors Configured'}
+          </div>
+        </div>
+      </div>
+
+      {/* ─── STICKY CATEGORY NAVIGATION TABS ─── */}
+      <div className="sticky top-2 z-20 flex items-center justify-between gap-2 p-1.5 rounded-2xl border border-border bg-card/95 backdrop-blur-md shadow-xs overflow-x-auto">
+        <div className="flex items-center gap-1.5 min-w-max">
+          {[
+            { id: 'all', label: 'All Settings', icon: SlidersHorizontal },
+            { id: 'branding', label: 'Branding & Theme', icon: Palette },
+            { id: 'contact', label: 'Contact & Social', icon: Phone },
+            { id: 'code', label: 'Custom Code & Scripts', icon: Code2 },
+            { id: 'seo', label: 'SEO & AI Crawlers', icon: Bot },
+            { id: 'project', label: 'Project Showcase', icon: Sparkles },
+            { id: 'chat', label: 'Live Chat Widget', icon: MessageSquare },
+          ].map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id as SettingsTab)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                  isActive
+                    ? 'bg-primary text-primary-foreground shadow-2xs'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
+                }`}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* ─── TOP 2-COLUMN GRID ─── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-        {/* ══════ LEFT COLUMN ══════ */}
-        <div className="space-y-6">
-          {/* 1. Site Identity & Branding */}
-          <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs space-y-5">
+      {(activeTab === 'all' || activeTab === 'branding' || activeTab === 'contact') && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+          {/* ══════ LEFT COLUMN ══════ */}
+          <div className="space-y-6">
+            {/* 1. Site Identity & Branding */}
+            {(activeTab === 'all' || activeTab === 'branding') && (
+              <div className="rounded-2xl border border-border/80 bg-card p-6 shadow-xs space-y-5">
             <div className="flex items-center gap-2.5">
               <div className="h-7 w-7 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
                 <Globe className="h-4 w-4" />
@@ -814,15 +966,17 @@ export default function AdminSettingsPage() {
               />
             </div>
           </div>
+          )}
 
           {/* 2. Contact Details */}
-          <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs space-y-4">
-            <div className="flex items-center gap-2.5">
-              <div className="h-7 w-7 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
-                <Phone className="h-4 w-4" />
+          {(activeTab === 'all' || activeTab === 'contact') && (
+            <div className="rounded-2xl border border-border/80 bg-card p-6 shadow-xs space-y-4">
+              <div className="flex items-center gap-2.5">
+                <div className="h-7 w-7 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-600">
+                  <Phone className="h-4 w-4" />
+                </div>
+                <h2 className="text-sm font-bold text-foreground">Contact Details</h2>
               </div>
-              <h2 className="text-sm font-bold text-slate-900">Contact Details</h2>
-            </div>
 
             <div className="space-y-3">
               {/* Public Contact Email */}
@@ -877,19 +1031,22 @@ export default function AdminSettingsPage() {
               </div>
             </div>
           </div>
+          )}
         </div>
 
         {/* ══════ RIGHT COLUMN ══════ */}
         <div className="space-y-6">
           {/* 3. Brand Theme Colors */}
-          <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs space-y-4">
-            <div className="flex items-center gap-2.5">
-              <div className="h-7 w-7 rounded-lg bg-pink-50 flex items-center justify-center text-pink-600">
-                <Palette className="h-4 w-4" />
-              </div>
-              <div>
-                <h2 className="text-sm font-bold text-slate-900">Brand Theme Colors</h2>
-                <p className="text-[11px] text-slate-500">
+          {(activeTab === 'all' || activeTab === 'branding') && (
+            <>
+              <div className="rounded-2xl border border-border/80 bg-card p-6 shadow-xs space-y-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-7 w-7 rounded-lg bg-pink-500/10 flex items-center justify-center text-pink-600">
+                    <Palette className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-bold text-foreground">Brand Theme Colors</h2>
+                    <p className="text-[11px] text-muted-foreground">
                   Customize the primary and accent colors applied across buttons, badges, links.
                 </p>
               </div>
@@ -1101,18 +1258,21 @@ export default function AdminSettingsPage() {
               </div>
             </div>
           </div>
+          </>
+          )}
 
           {/* 5. Global Custom CSS & JavaScript */}
-          <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs space-y-3.5">
-            <div className="flex items-center gap-2.5">
-              <div className="h-7 w-7 rounded-lg bg-cyan-50 flex items-center justify-center text-cyan-600">
-                <Code2 className="h-4 w-4" />
-              </div>
-              <div>
-                <h2 className="text-sm font-bold text-slate-900">
-                  Global Custom CSS &amp; JavaScript
-                </h2>
-                <p className="text-[11px] text-slate-500">
+          {activeTab === 'all' && (
+            <div className="rounded-2xl border border-border/80 bg-card p-6 shadow-xs space-y-3.5">
+              <div className="flex items-center gap-2.5">
+                <div className="h-7 w-7 rounded-lg bg-cyan-500/10 flex items-center justify-center text-cyan-600">
+                  <Code2 className="h-4 w-4" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-bold text-foreground">
+                    Global Custom CSS &amp; JavaScript
+                  </h2>
+                  <p className="text-[11px] text-muted-foreground">
                   Add your custom CSS styles, Google Analytics (GA4), Meta Pixel, chat widgets, or tracking scripts applied across the website.
                 </p>
               </div>
@@ -1162,97 +1322,202 @@ export default function AdminSettingsPage() {
               />
             </div>
           </div>
+          )}
 
           {/* 6. Social Profiles */}
-          <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs space-y-4">
-            <div className="flex items-center gap-2.5">
-              <div className="h-7 w-7 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
-                <Share2 className="h-4 w-4" />
+          {(activeTab === 'all' || activeTab === 'contact') && (
+            <div className="rounded-2xl border border-border/80 bg-card p-6 shadow-xs space-y-4">
+              <div className="flex items-center gap-2.5">
+                <div className="h-7 w-7 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-600">
+                  <Share2 className="h-4 w-4" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-bold text-foreground">Social Profiles</h2>
+                  <p className="text-[11px] text-muted-foreground">
+                    Add your social media links to connect with your audience.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {/* Twitter / X */}
+                <div className="space-y-1">
+                  <Label className="text-[11px] font-semibold text-slate-700">Twitter / X Profile</Label>
+                  <div className="relative flex items-center rounded-xl border border-slate-200 bg-white focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/20">
+                    <div className="pl-2.5 text-slate-700 font-bold text-xs">𝕏</div>
+                    <input
+                      type="url"
+                      value={s.social_twitter || ''}
+                      onChange={(e) => up('social_twitter', e.target.value)}
+                      placeholder="https://x.com/yourhandle"
+                      className="w-full h-9 border-0 bg-transparent px-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Facebook */}
+                <div className="space-y-1">
+                  <Label className="text-[11px] font-semibold text-slate-700">Facebook</Label>
+                  <div className="relative flex items-center rounded-xl border border-slate-200 bg-white focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/20">
+                    <div className="pl-2.5 text-blue-600">
+                      <Facebook className="h-3.5 w-3.5" />
+                    </div>
+                    <input
+                      type="url"
+                      value={s.social_facebook || ''}
+                      onChange={(e) => up('social_facebook', e.target.value)}
+                      placeholder="https://facebook.com/yourpage"
+                      className="w-full h-9 border-0 bg-transparent px-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* LinkedIn */}
+                <div className="space-y-1">
+                  <Label className="text-[11px] font-semibold text-slate-700">LinkedIn</Label>
+                  <div className="relative flex items-center rounded-xl border border-slate-200 bg-white focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/20">
+                    <div className="pl-2.5 text-blue-700">
+                      <Linkedin className="h-3.5 w-3.5" />
+                    </div>
+                    <input
+                      type="url"
+                      value={s.social_linkedin || ''}
+                      onChange={(e) => up('social_linkedin', e.target.value)}
+                      placeholder="https://linkedin.com/company/yourorg"
+                      className="w-full h-9 border-0 bg-transparent px-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Instagram Row */}
+              <div className="space-y-1 sm:w-1/2">
+                <Label className="text-[11px] font-semibold text-slate-700">Instagram</Label>
+                <div className="relative flex items-center rounded-xl border border-slate-200 bg-white focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/20">
+                  <div className="pl-2.5 text-pink-600">
+                    <Instagram className="h-3.5 w-3.5" />
+                  </div>
+                  <input
+                    type="url"
+                    value={s.social_instagram || ''}
+                    onChange={(e) => up('social_instagram', e.target.value)}
+                    placeholder="https://instagram.com/yourhandle"
+                    className="w-full h-9 border-0 bg-transparent px-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+      )}
+
+      {/* ─── DEDICATED FULL-WIDTH CODE & SCRIPTS EDITOR (activeTab === 'code') ─── */}
+      {activeTab === 'code' && (
+        <div className="rounded-2xl border border-border/80 bg-card p-6 shadow-xs space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border/60 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-cyan-500/10 flex items-center justify-center text-cyan-600">
+                <Code2 className="h-5 w-5" />
               </div>
               <div>
-                <h2 className="text-sm font-bold text-slate-900">Social Profiles</h2>
-                <p className="text-[11px] text-slate-500">
-                  Add your social media links to connect with your audience.
+                <h2 className="text-base font-bold text-foreground">
+                  Global Custom Code, CSS &amp; JavaScript
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  Inject sitewide custom styling, Google Analytics (GA4), Meta Pixel, custom tag managers, and CDN libraries.
                 </p>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {/* Twitter / X */}
-              <div className="space-y-1">
-                <Label className="text-[11px] font-semibold text-slate-700">Twitter / X Profile</Label>
-                <div className="relative flex items-center rounded-xl border border-slate-200 bg-white focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/20">
-                  <div className="pl-2.5 text-slate-700 font-bold text-xs">𝕏</div>
-                  <input
-                    type="url"
-                    value={s.social_twitter || ''}
-                    onChange={(e) => up('social_twitter', e.target.value)}
-                    placeholder="https://x.com/yourhandle"
-                    className="w-full h-9 border-0 bg-transparent px-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              {/* Facebook */}
-              <div className="space-y-1">
-                <Label className="text-[11px] font-semibold text-slate-700">Facebook</Label>
-                <div className="relative flex items-center rounded-xl border border-slate-200 bg-white focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/20">
-                  <div className="pl-2.5 text-blue-600">
-                    <Facebook className="h-3.5 w-3.5" />
-                  </div>
-                  <input
-                    type="url"
-                    value={s.social_facebook || ''}
-                    onChange={(e) => up('social_facebook', e.target.value)}
-                    placeholder="https://facebook.com/yourpage"
-                    className="w-full h-9 border-0 bg-transparent px-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              {/* LinkedIn */}
-              <div className="space-y-1">
-                <Label className="text-[11px] font-semibold text-slate-700">LinkedIn</Label>
-                <div className="relative flex items-center rounded-xl border border-slate-200 bg-white focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/20">
-                  <div className="pl-2.5 text-blue-700">
-                    <Linkedin className="h-3.5 w-3.5" />
-                  </div>
-                  <input
-                    type="url"
-                    value={s.social_linkedin || ''}
-                    onChange={(e) => up('social_linkedin', e.target.value)}
-                    placeholder="https://linkedin.com/company/yourorg"
-                    className="w-full h-9 border-0 bg-transparent px-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Instagram Row */}
-            <div className="space-y-1 sm:w-1/2">
-              <Label className="text-[11px] font-semibold text-slate-700">Instagram</Label>
-              <div className="relative flex items-center rounded-xl border border-slate-200 bg-white focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/20">
-                <div className="pl-2.5 text-pink-600">
-                  <Instagram className="h-3.5 w-3.5" />
-                </div>
-                <input
-                  type="url"
-                  value={s.social_instagram || ''}
-                  onChange={(e) => up('social_instagram', e.target.value)}
-                  placeholder="https://instagram.com/yourhandle"
-                  className="w-full h-9 border-0 bg-transparent px-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none"
-                />
-              </div>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                onClick={save}
+                disabled={saving}
+                className="h-9 px-4 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold shadow-xs cursor-pointer gap-2"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-3.5 w-3.5" />
+                    <span>Save Code &amp; Settings</span>
+                  </>
+                )}
+              </Button>
             </div>
           </div>
+
+          {/* Quick CDN Library Inserters */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-muted/40 border border-border/60">
+            <div className="space-y-0.5">
+              <span className="text-xs font-bold text-foreground">One-Click CDN Library Snippets</span>
+              <p className="text-[11px] text-muted-foreground">Click any library badge to insert its verified CDN tags into your editor.</p>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={() => addCdnPreset('bootstrap')}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-blue-500/30 bg-blue-500/10 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 transition cursor-pointer"
+              >
+                <span>📦 Bootstrap 5</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => addCdnPreset('jquery')}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-purple-500/30 bg-purple-500/10 text-xs font-semibold text-purple-600 dark:text-purple-400 hover:bg-purple-500/20 transition cursor-pointer"
+              >
+                <span>🎵 jQuery 3.7</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => addCdnPreset('css')}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition cursor-pointer"
+              >
+                <span>🌿 Sample CSS Rule</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => addCdnPreset('js')}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 text-xs font-semibold text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 transition cursor-pointer"
+              >
+                <span>⚡ Sample JS Script</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Full-size Code Editor Area */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
+              <span className="font-mono text-[11px] font-semibold text-foreground">Global Script Buffer</span>
+              <span className="text-[11px] font-mono">{customCss.length} characters</span>
+            </div>
+            <div className="relative rounded-xl border border-border bg-slate-950 p-4 font-mono text-xs shadow-inner">
+              <textarea
+                rows={16}
+                value={customCss}
+                onChange={(e) => setCustomCss(e.target.value)}
+                placeholder="/* Add your custom <style> or <script> tags here. They will be executed across all public website pages. */"
+                className="w-full bg-transparent border-0 text-slate-100 placeholder:text-slate-500 focus:outline-none resize-y font-mono text-xs leading-relaxed"
+              />
+            </div>
+            <p className="text-[11px] text-muted-foreground px-1">
+              Note: You can include both inline <code className="text-primary font-mono">&lt;style&gt;</code> and <code className="text-primary font-mono">&lt;script&gt;</code> tags. They are injected into the site layout head and footer automatically.
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ─── SEARCH ENGINES & AI CRAWLER MANAGEMENT (robots.txt, llms.txt, sitemap.xml) ─── */}
-      <SeoCrawlerManager />
+      {(activeTab === 'all' || activeTab === 'seo') && <SeoCrawlerManager />}
 
       {/* ─── WIDE SECTION 1: PRESTIGE PROJECT LAUNCH & SHOWCASE ─── */}
-      <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs space-y-5">
+      {(activeTab === 'all' || activeTab === 'project') && (
+        <div className="rounded-2xl border border-border/80 bg-card p-6 shadow-xs space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 pb-4">
           <div className="flex items-center gap-2.5">
             <div className="h-8 w-8 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600">
@@ -1517,24 +1782,26 @@ export default function AdminSettingsPage() {
           </div>
         </div>
       </div>
+      )}
 
       {/* ─── WIDE SECTION 2: PROPERTY ADVISOR LIVE CHAT WIDGET ─── */}
-      <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 pb-4">
-          <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
-              <MessageSquare className="h-4 w-4" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-base font-bold text-slate-900">
-                  Property Advisor Live Chat Widget
-                </h2>
-                <span className="bg-emerald-100 text-emerald-800 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                  ACTIVE
-                </span>
+      {(activeTab === 'all' || activeTab === 'chat') && (
+        <div className="rounded-2xl border border-border/80 bg-card p-6 shadow-xs space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-border/60 pb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="h-8 w-8 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600">
+                <MessageSquare className="h-4 w-4" />
               </div>
-              <p className="text-xs text-slate-500">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base font-bold text-foreground">
+                    Property Advisor Live Chat Widget
+                  </h2>
+                  <span className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                    ACTIVE
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground">
                 Configure the floating premium advisor chat widget, welcome greetings, quick action buttons, and WhatsApp routing.
               </p>
             </div>
@@ -2042,6 +2309,7 @@ export default function AdminSettingsPage() {
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }
