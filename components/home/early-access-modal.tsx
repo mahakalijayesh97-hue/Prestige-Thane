@@ -9,6 +9,7 @@ export interface EarlyAccessModalProps {
   onClose: () => void;
   source?: string;
   modalTitle?: string;
+  formSlug?: string;
   onLeadSuccess?: (name: string) => void;
 }
 
@@ -100,6 +101,7 @@ export const EarlyAccessModal: React.FC<EarlyAccessModalProps> = ({
   onClose,
   source = 'Hero CTA',
   modalTitle = 'Register for Early Access',
+  formSlug = 'early-access-modal',
   onLeadSuccess,
 }) => {
   const [formDef, setFormDef] = useState<FormDefinition>(DEFAULT_FORM_DEFINITION);
@@ -112,25 +114,33 @@ export const EarlyAccessModal: React.FC<EarlyAccessModalProps> = ({
   const [errorMsg, setErrorMsg] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
 
-  // Load dynamic form definition from API
+  // Load dynamic form definition from API whenever opened or formSlug changes
   useEffect(() => {
     async function fetchFormConfig() {
       try {
-        const res = await fetch('/api/forms/early-access-modal', { cache: 'no-store' });
+        const targetSlug = formSlug || 'early-access-modal';
+        const res = await fetch(`/api/forms/${encodeURIComponent(targetSlug)}`, { cache: 'no-store' });
         if (res.ok) {
           const json = await res.json();
           if (json.form) {
             setFormDef(json.form);
             // Initialize default values for pills or select fields
-            const initialVals: Record<string, string> = { ...fieldValues };
+            const initialVals: Record<string, string> = {};
             json.form.fields?.forEach((f: FormFieldDef) => {
               if ((f.type === 'pills' || f.type === 'select') && f.options && f.options.length > 0) {
-                if (!initialVals[f.name]) {
-                  initialVals[f.name] = f.options[0];
-                }
+                initialVals[f.name] = f.options[0];
+              } else {
+                initialVals[f.name] = '';
               }
             });
             setFieldValues((prev) => ({ ...initialVals, ...prev }));
+          }
+        } else if (targetSlug !== 'early-access-modal') {
+          // Fallback to default form if specific slug not found
+          const fallbackRes = await fetch('/api/forms/early-access-modal', { cache: 'no-store' });
+          if (fallbackRes.ok) {
+            const fallbackJson = await fallbackRes.json();
+            if (fallbackJson.form) setFormDef(fallbackJson.form);
           }
         }
       } catch (err) {
@@ -138,8 +148,10 @@ export const EarlyAccessModal: React.FC<EarlyAccessModalProps> = ({
       }
     }
 
-    fetchFormConfig();
-  }, []);
+    if (isOpen) {
+      fetchFormConfig();
+    }
+  }, [isOpen, formSlug]);
 
   useEffect(() => {
     if (isOpen) {
@@ -468,36 +480,54 @@ export function EarlyAccessModalContainer() {
   const [isOpen, setIsOpen] = useState(false);
   const [source, setSource] = useState('Hero CTA');
   const [modalTitle, setModalTitle] = useState('Register for Early Access');
+  const [formSlug, setFormSlug] = useState('early-access-modal');
 
   useEffect(() => {
-    const handleOpen = (modalSource?: string, title?: string) => {
+    const handleOpen = (modalSource?: string, title?: string, slug?: string) => {
       setSource(modalSource || 'Hero CTA');
-      setModalTitle(title || 'Register for Early Access');
+      if (title) setModalTitle(title);
+      setFormSlug(slug || 'early-access-modal');
       setIsOpen(true);
     };
 
     (window as any).openEarlyAccessModal = handleOpen;
     (window as any).openEarlyModal = handleOpen;
+    (window as any).openFormModal = handleOpen;
 
     const handleCustomEvent = (e: CustomEvent) => {
       const detail = e.detail || {};
-      handleOpen(detail.source, detail.title);
+      handleOpen(detail.source, detail.title, detail.slug || detail.formSlug);
     };
     window.addEventListener('open-early-access', handleCustomEvent as EventListener);
+    window.addEventListener('open-form-modal', handleCustomEvent as EventListener);
 
     const checkHash = () => {
       if (typeof window === 'undefined') return;
-      const hash = window.location.hash;
-      if (['#early-access', '#book-site-visit', '#download-brochure', '#pre-launch-enquiry', '#modal'].includes(hash)) {
+      const rawHash = window.location.hash.replace(/^#/, '').trim();
+      if (!rawHash) return;
+      if (
+        rawHash === 'early-access' ||
+        rawHash === 'book-site-visit' ||
+        rawHash === 'download-brochure' ||
+        rawHash === 'pre-launch-enquiry' ||
+        rawHash === 'modal' ||
+        rawHash.endsWith('-modal') ||
+        rawHash.startsWith('modal-') ||
+        rawHash.includes('modal')
+      ) {
         const title =
-          hash === '#download-brochure'
+          rawHash === 'download-brochure'
             ? 'Download Brochure & Pricing'
-            : hash === '#book-site-visit'
+            : rawHash === 'book-site-visit'
             ? 'Book Free Site Visit'
-            : hash === '#early-access'
+            : rawHash === 'early-access'
             ? 'Register for Early Access'
-            : 'Pre-Launch VIP Enquiry';
-        handleOpen('Hash Navigation (' + hash + ')', title);
+            : undefined;
+        const targetSlug =
+          rawHash === 'early-access' || rawHash === 'book-site-visit' || rawHash === 'download-brochure' || rawHash === 'pre-launch-enquiry' || rawHash === 'modal'
+            ? 'early-access-modal'
+            : rawHash;
+        handleOpen('Hash Navigation (#' + rawHash + ')', title, targetSlug);
       }
     };
     checkHash();
@@ -507,58 +537,74 @@ export function EarlyAccessModalContainer() {
       const target = e.target as HTMLElement | null;
       if (!target) return;
 
-      const anchor = target.closest(
-        'a[href="#early-access"], a[href="#book-site-visit"], a[href="#download-brochure"], a[href="#pre-launch-enquiry"], a[href="#modal"]'
-      );
-      if (anchor) {
+      // 1. Any element with [data-modal] attribute
+      const modalBtn = target.closest('[data-modal]');
+      if (modalBtn) {
         e.preventDefault();
-        const href = anchor.getAttribute('href');
-        const customTitle =
-          anchor.getAttribute('data-modal-title') ||
-          (href === '#download-brochure'
-            ? 'Download Brochure & Pricing'
-            : href === '#book-site-visit'
-            ? 'Book Free Site Visit'
-            : 'Register for Early Access');
-        const customSource =
-          anchor.getAttribute('data-modal-source') ||
-          (href === '#download-brochure'
-            ? 'Brochure Link'
-            : href === '#book-site-visit'
-            ? 'Site Visit Link'
-            : 'Early Access Link');
-        handleOpen(customSource, customTitle);
+        const rawSlug = modalBtn.getAttribute('data-modal')?.trim();
+        const customTitle = modalBtn.getAttribute('data-modal-title') || undefined;
+        const customSource = modalBtn.getAttribute('data-modal-source') || undefined;
+        const targetSlug = (!rawSlug || rawSlug === 'true' || rawSlug === '1') ? 'early-access-modal' : rawSlug;
+        handleOpen(customSource, customTitle, targetSlug);
         return;
       }
 
+      // 2. Specific hero / action buttons
       const visitBtn = target.closest('#hero-book-site-visit-btn, [data-action="book-site-visit"]');
       if (visitBtn) {
         e.preventDefault();
-        handleOpen('Hero Book Site Visit Button', 'Book Free Site Visit');
+        handleOpen('Hero Book Site Visit Button', 'Book Free Site Visit', 'early-access-modal');
         return;
       }
 
       const brochureBtn = target.closest('#hero-brochure-btn, [data-action="download-brochure"]');
       if (brochureBtn) {
         e.preventDefault();
-        handleOpen('Hero Download Brochure Button', 'Download Brochure & Pricing');
+        handleOpen('Hero Download Brochure Button', 'Download Brochure & Pricing', 'early-access-modal');
         return;
       }
 
       const saveLacsBtn = target.closest('#hero-save-lacs-btn, [data-action="save-lacs"]');
       if (saveLacsBtn) {
         e.preventDefault();
-        handleOpen('Save Upto 5 Lacs Pill', 'Save Upto ₹5 Lacs* (VIP Pre-Launch Offer)');
+        handleOpen('Save Upto 5 Lacs Pill', 'Save Upto ₹5 Lacs* (VIP Pre-Launch Offer)', 'early-access-modal');
         return;
       }
 
-      const genericModalBtn = target.closest('[data-modal="early-access"], .open-early-modal');
-      if (genericModalBtn) {
-        e.preventDefault();
-        const customTitle = genericModalBtn.getAttribute('data-modal-title') || undefined;
-        const customSource = genericModalBtn.getAttribute('data-modal-source') || undefined;
-        handleOpen(customSource, customTitle);
-        return;
+      // 3. Any anchor linking to a modal hash (#early-access, #...-modal, etc.)
+      const anchor = target.closest('a[href*="#"]');
+      if (anchor) {
+        const rawHref = anchor.getAttribute('href') || '';
+        const hashIdx = rawHref.indexOf('#');
+        if (hashIdx !== -1) {
+          const hash = rawHref.substring(hashIdx + 1).trim();
+          if (
+            hash === 'early-access' ||
+            hash === 'book-site-visit' ||
+            hash === 'download-brochure' ||
+            hash === 'pre-launch-enquiry' ||
+            hash === 'modal' ||
+            hash.endsWith('-modal') ||
+            hash.startsWith('modal-') ||
+            hash.includes('modal')
+          ) {
+            e.preventDefault();
+            const customTitle =
+              anchor.getAttribute('data-modal-title') ||
+              (hash === 'download-brochure'
+                ? 'Download Brochure & Pricing'
+                : hash === 'book-site-visit'
+                ? 'Book Free Site Visit'
+                : undefined);
+            const customSource = anchor.getAttribute('data-modal-source') || `Link (${rawHref})`;
+            const targetSlug =
+              hash === 'early-access' || hash === 'book-site-visit' || hash === 'download-brochure' || hash === 'pre-launch-enquiry' || hash === 'modal'
+                ? 'early-access-modal'
+                : hash;
+            handleOpen(customSource, customTitle, targetSlug);
+            return;
+          }
+        }
       }
     };
 
@@ -567,7 +613,9 @@ export function EarlyAccessModalContainer() {
     return () => {
       delete (window as any).openEarlyAccessModal;
       delete (window as any).openEarlyModal;
+      delete (window as any).openFormModal;
       window.removeEventListener('open-early-access', handleCustomEvent as EventListener);
+      window.removeEventListener('open-form-modal', handleCustomEvent as EventListener);
       window.removeEventListener('hashchange', checkHash);
       document.removeEventListener('click', handleClick);
     };
@@ -579,6 +627,7 @@ export function EarlyAccessModalContainer() {
       onClose={() => setIsOpen(false)}
       source={source}
       modalTitle={modalTitle}
+      formSlug={formSlug}
     />
   );
 }

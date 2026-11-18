@@ -41,6 +41,10 @@ import {
   ArrowRight,
   Send,
   MessageSquare,
+  Link2,
+  Globe,
+  HelpCircle,
+  Code,
 } from 'lucide-react';
 
 interface FormField {
@@ -119,6 +123,17 @@ export default function FormsAdminPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [previewForm, setPreviewForm] = useState<FormRow | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<typeof TEMPLATE_PRESETS[0] | null>(null);
+  const [connectModalForm, setConnectModalForm] = useState<FormRow | null>(null);
+  const [showGuideModal, setShowGuideModal] = useState(false);
+  const [connectTab, setConnectTab] = useState<'modal' | 'inline'>('modal');
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [newFormType, setNewFormType] = useState<'modal' | 'inline'>('modal');
+
+  function copyText(text: string, key: string) {
+    navigator.clipboard.writeText(text);
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 2000);
+  }
 
   useEffect(() => {
     loadForms();
@@ -174,11 +189,13 @@ export default function FormsAdminPage() {
       setNewTitle(preset.title);
       setNewSlug(preset.slug);
       setNewDescription(preset.description);
+      setNewFormType(preset.slug.includes('modal') ? 'modal' : 'inline');
     } else {
       setSelectedTemplate(null);
       setNewTitle('');
       setNewSlug('');
       setNewDescription('');
+      setNewFormType('modal');
     }
     setShowCreateModal(true);
   }
@@ -374,8 +391,8 @@ export default function FormsAdminPage() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-16">
       {/* ─── BREADCRUMBS & TOP HEADER ─── */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border/70 pb-5">
-        <div className="space-y-3">
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between border-b border-border/70 pb-5">
+        <div className="space-y-3 min-w-0 flex-1">
           {/* Breadcrumb */}
           <div className="flex items-center gap-2 text-xs">
             <Link
@@ -392,20 +409,20 @@ export default function FormsAdminPage() {
           </div>
 
           {/* Title with Badge & Icon */}
-          <div className="flex flex-wrap items-center gap-3.5 pt-1">
-            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-500/15 to-indigo-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 shadow-xs">
+          <div className="flex items-start gap-3.5">
+            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-500/15 to-indigo-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 shadow-xs mt-0.5">
               <FormInput className="h-5 w-5" />
             </div>
-            <div>
+            <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2.5">
-                <h1 className="text-2xl sm:text-3xl font-bold tracking-normal text-foreground leading-normal sm:leading-snug py-0.5">
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground leading-tight py-0.5">
                   Forms &amp; Modal Builder
                 </h1>
                 <Badge variant="outline" className="border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold text-[11px] px-2.5 py-0.5 rounded-md h-fit">
                   {totalCount} Form Configs
                 </Badge>
               </div>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 leading-relaxed">
+              <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 max-w-2xl leading-relaxed">
                 Design lead capture modal popups, customize field labels &amp; validation, route to WhatsApp, and monitor customer inquiries.
               </p>
             </div>
@@ -413,13 +430,13 @@ export default function FormsAdminPage() {
         </div>
 
         {/* Right side Actions */}
-        <div className="flex flex-wrap items-center gap-2.5 sm:self-end">
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
           <Button
             variant="outline"
             size="sm"
             onClick={loadForms}
             disabled={isRefreshing}
-            className="rounded-xl border-border/80 gap-1.5 text-xs font-semibold shadow-xs hover:border-primary/50"
+            className="rounded-xl border-border/80 gap-1.5 text-xs font-semibold shadow-xs hover:bg-accent cursor-pointer"
             title="Refresh forms"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin text-primary' : 'text-muted-foreground'}`} />
@@ -430,7 +447,7 @@ export default function FormsAdminPage() {
             variant="outline"
             size="sm"
             asChild
-            className="rounded-xl border-border/80 gap-1.5 text-xs font-semibold shadow-xs hover:border-primary/50"
+            className="rounded-xl border-border/80 gap-1.5 text-xs font-semibold shadow-xs hover:bg-accent cursor-pointer"
           >
             <Link href="/admin/contact">
               <Mail className="h-3.5 w-3.5 text-blue-600" />
@@ -439,9 +456,20 @@ export default function FormsAdminPage() {
           </Button>
 
           <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowGuideModal(true)}
+            className="rounded-xl border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 gap-1.5 text-xs font-semibold shadow-xs cursor-pointer"
+            title="Learn how to link modal popups vs normal page forms"
+          >
+            <HelpCircle className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+            <span>Connection Guide</span>
+          </Button>
+
+          <Button
             size="sm"
             onClick={() => openCreateWithTemplate()}
-            className="rounded-xl gap-1.5 text-xs font-bold shadow-xs bg-blue-600 hover:bg-blue-700 text-white"
+            className="rounded-xl gap-1.5 text-xs font-bold shadow-xs bg-blue-600 hover:bg-blue-700 text-white cursor-pointer px-3.5 sm:px-4"
           >
             <Plus className="h-4 w-4" />
             <span>Create New Form</span>
@@ -587,6 +615,15 @@ export default function FormsAdminPage() {
                             <code className="text-[11px] font-mono bg-blue-500/10 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded font-semibold border border-blue-500/20">
                               {form.slug}
                             </code>
+                            {form.slug.includes('modal') ? (
+                              <span className="text-[10px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-md border border-blue-500/20">
+                                🗂️ Modal Popup
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-md border border-indigo-500/20">
+                                📄 Normal Form
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -618,32 +655,50 @@ export default function FormsAdminPage() {
                       </p>
                     )}
 
-                    {/* Trigger Code Pill */}
-                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-muted/40 border border-border/70 text-xs">
+                    {/* Trigger Code & Connection Options */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-xl bg-muted/40 border border-border/70 text-xs">
                       <div className="flex items-center gap-1.5 min-w-0">
-                        <span className="text-[11px] font-semibold text-muted-foreground shrink-0">Trigger:</span>
+                        <span className="text-[11px] font-semibold text-muted-foreground shrink-0">
+                          {form.slug.includes('modal') ? 'Popup Trigger:' : 'Form Identifier:'}
+                        </span>
                         <code className="font-mono text-[11px] font-bold text-blue-600 dark:text-blue-400 truncate">
-                          data-modal=&quot;{form.slug}&quot;
+                          {form.slug.includes('modal') ? `data-modal="${form.slug}"` : `#${form.slug}`}
                         </code>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleCopyTriggerCode(form.slug)}
-                        className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition shrink-0"
-                        title="Copy HTML data-modal trigger code"
-                      >
-                        {copiedSlug === form.slug ? (
-                          <>
-                            <Check className="w-3 h-3 text-emerald-600" />
-                            <span className="text-emerald-600">Copied</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3 h-3" />
-                            <span>Copy</span>
-                          </>
-                        )}
-                      </button>
+
+                      <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
+                        <button
+                          type="button"
+                          onClick={() => handleCopyTriggerCode(form.slug)}
+                          className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition cursor-pointer"
+                          title="Copy HTML data-modal trigger code"
+                        >
+                          {copiedSlug === form.slug ? (
+                            <>
+                              <Check className="w-3 h-3 text-emerald-600" />
+                              <span className="text-emerald-600">Copied</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3 h-3" />
+                              <span>Copy Trigger</span>
+                            </>
+                          )}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setConnectModalForm(form);
+                            setConnectTab(form.slug.includes('modal') ? 'modal' : 'inline');
+                          }}
+                          className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-md bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/20 transition cursor-pointer"
+                          title="View how to connect this form into Navbar, buttons, and pages"
+                        >
+                          <Link2 className="w-3 h-3" />
+                          <span>Connect &amp; Link</span>
+                        </button>
+                      </div>
                     </div>
 
                     {/* Configured Fields Section */}
@@ -687,6 +742,21 @@ export default function FormsAdminPage() {
                         <Pencil className="w-3.5 h-3.5" />
                         <span>Edit Fields &amp; Validation</span>
                       </Link>
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setConnectModalForm(form);
+                        setConnectTab(form.slug.includes('modal') ? 'modal' : 'inline');
+                      }}
+                      className="rounded-xl text-xs font-semibold gap-1 px-2.5 hover:border-blue-500/50 hover:text-blue-600"
+                      title="See how to link this form to navbar, pages, and buttons"
+                    >
+                      <Link2 className="w-3.5 h-3.5 text-blue-600" />
+                      <span className="hidden sm:inline">Connect</span>
                     </Button>
 
                     <Button
@@ -824,6 +894,59 @@ export default function FormsAdminPage() {
 
             <div className="space-y-4 text-xs">
               <div>
+                <Label className="text-xs font-bold text-foreground mb-1.5 block">
+                  Select Form Type / Usage
+                </Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewFormType('modal');
+                      if (newSlug && !newSlug.endsWith('-modal')) {
+                        setNewSlug(`${newSlug}-modal`);
+                      }
+                    }}
+                    className={`flex items-start gap-2 p-2.5 rounded-xl border text-left transition cursor-pointer ${
+                      newFormType === 'modal'
+                        ? 'border-blue-500 bg-blue-500/10 text-foreground'
+                        : 'border-border bg-card text-muted-foreground hover:bg-muted'
+                    }`}
+                  >
+                    <Layers className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-bold text-xs block text-foreground">Modal Popup</span>
+                      <span className="text-[10px] text-muted-foreground block mt-0.5 leading-snug">
+                        Opens as a dialog popup when a visitor clicks a button or navbar link.
+                      </span>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewFormType('inline');
+                      if (newSlug.endsWith('-modal')) {
+                        setNewSlug(newSlug.replace(/-modal$/, ''));
+                      }
+                    }}
+                    className={`flex items-start gap-2 p-2.5 rounded-xl border text-left transition cursor-pointer ${
+                      newFormType === 'inline'
+                        ? 'border-indigo-500 bg-indigo-500/10 text-foreground'
+                        : 'border-border bg-card text-muted-foreground hover:bg-muted'
+                    }`}
+                  >
+                    <Globe className="w-4 h-4 text-indigo-500 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-bold text-xs block text-foreground">Normal Page Form</span>
+                      <span className="text-[10px] text-muted-foreground block mt-0.5 leading-snug">
+                        Embedded directly into a page layout via Page Builder or HTML block.
+                      </span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              <div>
                 <Label className="text-xs font-bold text-foreground mb-1 block">
                   Form Title <span className="text-amber-500">*</span>
                 </Label>
@@ -832,10 +955,10 @@ export default function FormsAdminPage() {
                   placeholder="e.g. Schedule Site Visit & Cab"
                   value={newTitle}
                   onChange={(e) => {
-                    setNewTitle(e.target.value);
-                    if (!newSlug || newSlug === newTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-')) {
-                      setNewSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
-                    }
+                    const titleVal = e.target.value;
+                    setNewTitle(titleVal);
+                    const baseSlug = titleVal.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+                    setNewSlug(newFormType === 'modal' ? (baseSlug.endsWith('-modal') ? baseSlug : `${baseSlug}-modal`) : baseSlug);
                   }}
                   className="rounded-xl h-10 text-xs font-semibold"
                 />
@@ -997,6 +1120,308 @@ export default function FormsAdminPage() {
                 className="rounded-xl text-xs"
               >
                 Close Preview
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── FORM CONNECTION & LINKING HELPER MODAL ─── */}
+      {connectModalForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in">
+          <div className="relative w-full max-w-2xl bg-card border border-border rounded-2xl p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-start justify-between border-b border-border pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center shrink-0">
+                  <Link2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-foreground">
+                    Connect &amp; Link Form: {connectModalForm.title}
+                  </h3>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-xs text-muted-foreground font-mono">Slug: {connectModalForm.slug}</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 border border-blue-500/20">
+                      {connectModalForm.slug.includes('modal') ? 'Modal Popup' : 'Page Form'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setConnectModalForm(null)}
+                className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Mode Switcher Tabs */}
+            <div className="flex items-center gap-2 p-1 bg-muted/60 border border-border rounded-xl">
+              <button
+                type="button"
+                onClick={() => setConnectTab('modal')}
+                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition cursor-pointer ${
+                  connectTab === 'modal'
+                    ? 'bg-background text-foreground shadow-xs border border-border/80'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5 text-blue-500" />
+                <span>Option A: Open as Modal Popup</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setConnectTab('inline')}
+                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition cursor-pointer ${
+                  connectTab === 'inline'
+                    ? 'bg-background text-foreground shadow-xs border border-border/80'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Globe className="w-3.5 h-3.5 text-indigo-500" />
+                <span>Option B: Embed on Normal Page</span>
+              </button>
+            </div>
+
+            {/* Content for Modal Popup */}
+            {connectTab === 'modal' ? (
+              <div className="space-y-4 text-xs">
+                {/* Navbar Connection */}
+                <div className="p-4 rounded-xl border border-border/80 bg-muted/30 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-foreground flex items-center gap-1.5">
+                      <span className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center text-[10px]">1</span>
+                      Navbar &amp; Menu Links Connection
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => copyText(`/#${connectModalForm.slug}`, 'nav_url')}
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:underline cursor-pointer"
+                    >
+                      {copiedKey === 'nav_url' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedKey === 'nav_url' ? 'Copied!' : 'Copy Navbar URL'}</span>
+                    </button>
+                  </div>
+                  <p className="text-muted-foreground text-[11px]">
+                    Go to <strong>Admin &rarr; Navbar</strong>, add a navigation link, and set its URL to:
+                  </p>
+                  <div className="flex items-center justify-between p-2.5 rounded-lg bg-background border border-border font-mono text-[11px] font-bold text-blue-600">
+                    <span>/#{connectModalForm.slug}</span>
+                    <span className="text-[10px] text-muted-foreground font-sans font-normal">Opens popup on any page</span>
+                  </div>
+                </div>
+
+                {/* HTML Button / Anchor Trigger */}
+                <div className="p-4 rounded-xl border border-border/80 bg-muted/30 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-foreground flex items-center gap-1.5">
+                      <span className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center text-[10px]">2</span>
+                      Page Button / Link HTML Trigger
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => copyText(`<a href="#${connectModalForm.slug}" data-modal="${connectModalForm.slug}">Inquire Now</a>`, 'html_btn')}
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:underline cursor-pointer"
+                    >
+                      {copiedKey === 'html_btn' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedKey === 'html_btn' ? 'Copied!' : 'Copy Button Tag'}</span>
+                    </button>
+                  </div>
+                  <p className="text-muted-foreground text-[11px]">
+                    Add <code>data-modal=&quot;{connectModalForm.slug}&quot;</code> or <code>href=&quot;#{connectModalForm.slug}&quot;</code> to any button or link. Clicking it automatically intercepts and opens the modal!
+                  </p>
+                  <div className="p-2.5 rounded-lg bg-background border border-border font-mono text-[11px] text-foreground overflow-x-auto">
+                    &lt;a href=&quot;#{connectModalForm.slug}&quot; data-modal=&quot;{connectModalForm.slug}&quot;&gt;Inquire Now&lt;/a&gt;
+                  </div>
+                </div>
+
+                {/* Live Test Trigger */}
+                <div className="p-4 rounded-xl border border-blue-500/20 bg-blue-500/5 flex items-center justify-between gap-3">
+                  <div className="space-y-0.5">
+                    <span className="font-bold text-foreground text-xs block">Test Modal Popup</span>
+                    <span className="text-[11px] text-muted-foreground block">
+                      Click the button to preview this modal dialog popup in real-time.
+                    </span>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => {
+                      if (typeof window !== 'undefined') {
+                        if ((window as any).openFormModal) {
+                          (window as any).openFormModal(connectModalForm.title, connectModalForm.title, connectModalForm.slug);
+                        } else {
+                          window.dispatchEvent(
+                            new CustomEvent('open-form-modal', {
+                              detail: { slug: connectModalForm.slug, title: connectModalForm.title, source: 'Admin Test' },
+                            })
+                          );
+                        }
+                      }
+                      setPreviewForm(connectModalForm);
+                    }}
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl gap-1.5 shadow-xs shrink-0 cursor-pointer"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>Test Open Modal</span>
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4 text-xs">
+                {/* Normal Page Form Instructions */}
+                <div className="p-4 rounded-xl border border-border/80 bg-muted/30 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-foreground flex items-center gap-1.5">
+                      <span className="w-5 h-5 rounded-full bg-indigo-500 text-white flex items-center justify-center text-[10px]">1</span>
+                      Insert in Visual Page Builder (Recommended)
+                    </span>
+                  </div>
+                  <ol className="list-decimal list-inside space-y-1.5 text-muted-foreground text-[11px] pl-1">
+                    <li>Go to <strong>Admin &rarr; Pages</strong> in the left sidebar.</li>
+                    <li>Edit any page (e.g., Home, Contact, or a custom landing page).</li>
+                    <li>Click <strong>&quot;+ Add Form Block&quot;</strong> in the page block builder.</li>
+                    <li>Select <strong>&quot;{connectModalForm.title}&quot;</strong> from the dropdown list.</li>
+                    <li>Click <strong>Save Page</strong> &mdash; the form will render inline on that page!</li>
+                  </ol>
+                </div>
+
+                {/* Raw HTML Embed Block */}
+                <div className="p-4 rounded-xl border border-border/80 bg-muted/30 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-foreground flex items-center gap-1.5">
+                      <span className="w-5 h-5 rounded-full bg-indigo-500 text-white flex items-center justify-center text-[10px]">2</span>
+                      Custom HTML Embed Snippet
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        copyText(
+                          `<div class="cms-lead-source-block" data-form-slug="${connectModalForm.slug}" data-form-title="${connectModalForm.title}"></div>`,
+                          'inline_snippet'
+                        )
+                      }
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:underline cursor-pointer"
+                    >
+                      {copiedKey === 'inline_snippet' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedKey === 'inline_snippet' ? 'Copied!' : 'Copy HTML Snippet'}</span>
+                    </button>
+                  </div>
+                  <p className="text-muted-foreground text-[11px]">
+                    If creating raw HTML pages or template sections, insert this placeholder tag:
+                  </p>
+                  <div className="p-2.5 rounded-lg bg-background border border-border font-mono text-[11px] text-foreground overflow-x-auto">
+                    &lt;div class=&quot;cms-lead-source-block&quot; data-form-slug=&quot;{connectModalForm.slug}&quot; data-form-title=&quot;{connectModalForm.title}&quot;&gt;&lt;/div&gt;
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="pt-3 border-t border-border flex justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setConnectModalForm(null)}
+                className="rounded-xl text-xs font-semibold cursor-pointer"
+              >
+                Done
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── GENERAL GUIDE DIALOG (MODAL VS NORMAL FORM) ─── */}
+      {showGuideModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in">
+          <div className="relative w-full max-w-2xl bg-card border border-border rounded-2xl p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-start justify-between border-b border-border pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center shrink-0">
+                  <HelpCircle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-foreground">
+                    How to Connect &amp; Link Forms to Your Website
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Clear guide on setting up Modal Popups vs Normal Page Forms.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowGuideModal(false)}
+                className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              {/* Type 1: Modal Popup */}
+              <div className="p-4 rounded-xl border border-blue-500/30 bg-blue-500/5 space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-600 text-white uppercase tracking-wider">
+                    Type 1
+                  </span>
+                  <h4 className="font-bold text-sm text-foreground">Modal Popup Form (Dialog)</h4>
+                </div>
+                <p className="text-muted-foreground text-[11px] leading-relaxed">
+                  Opens as an interactive floating dialog over the current page when a user clicks a button, banner, or navbar link.
+                </p>
+                <div className="space-y-2 bg-background p-3 rounded-lg border border-border">
+                  <div className="font-semibold text-foreground text-xs">How to connect:</div>
+                  <ul className="list-disc list-inside space-y-1 text-muted-foreground text-[11px]">
+                    <li>
+                      <strong>Navbar Menu:</strong> Set URL to <code className="text-blue-600 font-mono">/#your-form-slug</code> (e.g. <code className="text-blue-600 font-mono">/#early-access-modal</code>).
+                    </li>
+                    <li>
+                      <strong>Button in HTML:</strong> Add <code className="text-blue-600 font-mono">data-modal=&quot;your-form-slug&quot;</code> or <code className="text-blue-600 font-mono">href=&quot;#your-form-slug&quot;</code>.
+                    </li>
+                    <li>
+                      <strong>Automatic Global Listener:</strong> Any link with <code className="text-blue-600 font-mono">#...-modal</code> or <code className="text-blue-600 font-mono">data-modal</code> will automatically open the popup!
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Type 2: Normal Inline Form */}
+              <div className="p-4 rounded-xl border border-indigo-500/30 bg-indigo-500/5 space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-600 text-white uppercase tracking-wider">
+                    Type 2
+                  </span>
+                  <h4 className="font-bold text-sm text-foreground">Normal Inline Page Form</h4>
+                </div>
+                <p className="text-muted-foreground text-[11px] leading-relaxed">
+                  Renders directly inside the page flow, as an embedded section with its own layout (e.g. on a Contact page or landing page section).
+                </p>
+                <div className="space-y-2 bg-background p-3 rounded-lg border border-border">
+                  <div className="font-semibold text-foreground text-xs">How to connect:</div>
+                  <ul className="list-disc list-inside space-y-1 text-muted-foreground text-[11px]">
+                    <li>
+                      <strong>In Page Builder:</strong> Go to <strong>Admin &rarr; Pages</strong>, edit any page, click <strong>+ Add Form Block</strong>, and choose this form.
+                    </li>
+                    <li>
+                      <strong>In Custom Code / HTML:</strong> Insert <code className="text-indigo-600 font-mono">&lt;div class=&quot;cms-lead-source-block&quot; data-form-slug=&quot;your-slug&quot;&gt;&lt;/div&gt;</code>.
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-border flex justify-end">
+              <Button
+                type="button"
+                onClick={() => setShowGuideModal(false)}
+                className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl cursor-pointer"
+              >
+                Got It
               </Button>
             </div>
           </div>
