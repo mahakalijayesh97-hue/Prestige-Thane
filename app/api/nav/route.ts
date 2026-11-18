@@ -4,6 +4,7 @@ import { connectToDatabase } from '@/lib/mongodb';
 import NavItemModel from '@/lib/models/NavItem';
 import { getSupabaseServer } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { invalidateDataCache } from '@/lib/data';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -116,6 +117,7 @@ export async function POST(req: NextRequest) {
     } catch {}
 
     try {
+      invalidateDataCache();
       revalidatePath('/', 'layout');
     } catch {}
 
@@ -174,6 +176,7 @@ export async function PUT(req: NextRequest) {
       }
 
       try {
+        invalidateDataCache();
         revalidatePath('/', 'layout');
       } catch {}
 
@@ -207,6 +210,7 @@ export async function PUT(req: NextRequest) {
       } catch {}
 
       try {
+        invalidateDataCache();
         revalidatePath('/', 'layout');
       } catch {}
 

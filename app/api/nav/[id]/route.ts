@@ -4,6 +4,7 @@ import { connectToDatabase } from '@/lib/mongodb';
 import NavItemModel from '@/lib/models/NavItem';
 import { getSupabaseServer } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { invalidateDataCache } from '@/lib/data';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -57,6 +58,7 @@ export async function PUT(
     }
 
     try {
+      invalidateDataCache();
       revalidatePath('/', 'layout');
     } catch {}
 
@@ -96,6 +98,7 @@ export async function DELETE(
     }
 
     try {
+      invalidateDataCache();
       revalidatePath('/', 'layout');
     } catch {}
 

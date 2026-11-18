@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { connectToDatabase } from '@/lib/mongodb';
 import ThemeSetting from '@/lib/models/ThemeSetting';
+import { invalidateDataCache } from '@/lib/data';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -215,6 +217,11 @@ export async function POST(req: NextRequest) {
       { $set: payload },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
+
+    try {
+      invalidateDataCache();
+      revalidatePath('/', 'layout');
+    } catch {}
 
     return NextResponse.json(
       {

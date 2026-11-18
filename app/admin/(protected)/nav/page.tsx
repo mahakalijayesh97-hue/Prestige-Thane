@@ -625,9 +625,9 @@ export default function AdminNavPage() {
       </Card>
 
       {/* Main Grid: Menu Items List & Add Form */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 items-start">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-12 items-start">
         {/* Left Column: Menu Items Drag & Reorder List */}
-        <div className="space-y-3.5 lg:col-span-8">
+        <div className="space-y-3.5 xl:col-span-8">
           <div className="flex items-center justify-between px-1">
             <div className="flex items-center gap-2">
               <h2 className="text-sm font-bold text-foreground flex items-center gap-1.5">
@@ -673,10 +673,10 @@ export default function AdminNavPage() {
                   onDrop={(e) => handleDrop(e, item.id)}
                 >
                   {/* Top-Level Item Card */}
-                  <Card className="border border-border/80 bg-card p-3 sm:p-4 shadow-xs hover:border-primary/50 hover:shadow-md transition-all rounded-2xl">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <Card className="border border-border/80 bg-card p-3 sm:p-4 shadow-xs hover:border-primary/50 hover:shadow-md transition-all rounded-2xl overflow-hidden">
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between min-w-0">
                       {/* Left: Drag Handle, Number, Up/Down */}
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 shrink-0">
                         <div
                           title="Drag to rearrange"
                           className="grid h-8 w-6 cursor-grab place-items-center rounded-lg text-muted-foreground/50 hover:bg-muted hover:text-foreground active:cursor-grabbing transition"
@@ -685,7 +685,7 @@ export default function AdminNavPage() {
                         </div>
 
                         {/* Order Badge & Position Select */}
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 shrink-0">
                           <span className="grid h-7 w-7 place-items-center rounded-lg bg-muted text-xs font-black text-foreground border border-border/60">
                             {idx + 1}
                           </span>
@@ -707,7 +707,7 @@ export default function AdminNavPage() {
                         </div>
 
                         {/* Arrows */}
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 shrink-0">
                           <button
                             type="button"
                             title="Move link up"
@@ -730,9 +730,9 @@ export default function AdminNavPage() {
                       </div>
 
                       {/* Center: Label and URL Inputs */}
-                      <div className="flex flex-1 flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+                      <div className="flex flex-1 flex-col sm:flex-row items-stretch sm:items-center gap-2 min-w-0">
                         {/* Label Input */}
-                        <div className="relative sm:w-48 xl:w-56 shrink-0">
+                        <div className="relative w-full sm:w-40 xl:w-48 shrink-0 min-w-0">
                           <Input
                             value={item.label}
                             onChange={(e) => update(item.id, 'label', e.target.value)}
@@ -743,7 +743,7 @@ export default function AdminNavPage() {
                         </div>
 
                         {/* URL Input */}
-                        <div className="relative flex-1 min-w-[160px]">
+                        <div className="relative flex-1 min-w-[120px] w-full">
                           <Input
                             value={item.url}
                             onChange={(e) => update(item.id, 'url', e.target.value)}
@@ -765,8 +765,8 @@ export default function AdminNavPage() {
                       </div>
 
                       {/* Right: Visibility Switch, Add Sub-item & Delete */}
-                      <div className="flex items-center justify-between sm:justify-end gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-border/50">
-                        <div className="flex items-center gap-1.5">
+                      <div className="flex items-center justify-between sm:justify-end gap-2 pt-2 lg:pt-0 border-t lg:border-t-0 border-border/50 shrink-0 ml-auto">
+                        <div className="flex items-center gap-1.5 shrink-0">
                           <Switch
                             checked={item.is_active}
                             onCheckedChange={(v) => update(item.id, 'is_active', v)}
@@ -774,7 +774,7 @@ export default function AdminNavPage() {
                           />
                           <Badge
                             variant={item.is_active ? 'default' : 'secondary'}
-                            className="text-[10px] font-bold"
+                            className="text-[10px] font-bold shrink-0"
                           >
                             {item.is_active ? 'Active' : 'Hidden'}
                           </Badge>
@@ -788,21 +788,21 @@ export default function AdminNavPage() {
                             setNewLabel('');
                             setNewUrl(`${item.url}/sub-item`);
                           }}
-                          className="h-8 gap-1 px-2.5 text-[11px] text-muted-foreground hover:text-foreground"
+                          className="h-8 gap-1 px-2.5 text-[11px] text-muted-foreground hover:text-foreground shrink-0"
                           title="Add a nested child link under this menu item"
                         >
                           <FolderPlus className="h-3.5 w-3.5 text-primary" />
-                          <span className="hidden xl:inline">+ Sub</span>
+                          <span>+ Sub</span>
                         </Button>
 
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => remove(item.id, item.label)}
-                          className="h-8 w-8 p-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive rounded-lg"
+                          className="h-8 w-8 p-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive rounded-lg shrink-0"
                           title="Delete link"
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
@@ -816,11 +816,11 @@ export default function AdminNavPage() {
                     return (
                       <div
                         key={child.id}
-                        className="ml-6 sm:ml-10 flex items-center gap-2 pt-0.5"
+                        className="ml-6 sm:ml-10 flex items-center gap-2 pt-0.5 min-w-0"
                       >
                         <CornerDownRight className="h-4 w-4 text-muted-foreground/60 shrink-0" />
-                        <Card className="flex-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-2.5 bg-muted/30 border-border/60 rounded-xl">
-                          <div className="flex items-center gap-1">
+                        <Card className="flex-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-2.5 bg-muted/30 border-border/60 rounded-xl min-w-0">
+                          <div className="flex items-center gap-1 shrink-0">
                             <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground shrink-0 w-fit">
                               Sub {cIdx + 1}
                             </span>
@@ -841,7 +841,7 @@ export default function AdminNavPage() {
                             )}
                           </div>
 
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 shrink-0">
                             <button
                               type="button"
                               disabled={isChildFirst}
@@ -863,14 +863,14 @@ export default function AdminNavPage() {
                           <Input
                             value={child.label}
                             onChange={(e) => update(child.id, 'label', e.target.value)}
-                            className="h-8 text-xs font-semibold sm:w-44 xl:w-52 shrink-0"
+                            className="h-8 text-xs font-semibold sm:w-36 xl:w-44 shrink-0 min-w-0"
                             placeholder="Sub-item label"
                           />
 
                           <Input
                             value={child.url}
                             onChange={(e) => update(child.id, 'url', e.target.value)}
-                            className="h-8 text-xs font-mono flex-1 min-w-[140px] text-foreground"
+                            className="h-8 text-xs font-mono flex-1 min-w-[120px] text-foreground"
                             placeholder="/destination"
                           />
 
@@ -883,7 +883,7 @@ export default function AdminNavPage() {
                             <option value="_blank">New Tab ↗</option>
                           </select>
 
-                          <div className="flex items-center justify-between sm:justify-end gap-2">
+                          <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0 ml-auto">
                             <Switch
                               checked={child.is_active}
                               onCheckedChange={(v) => update(child.id, 'is_active', v)}
@@ -893,9 +893,10 @@ export default function AdminNavPage() {
                               variant="ghost"
                               size="sm"
                               onClick={() => remove(child.id, child.label)}
-                              className="h-7 w-7 p-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                              className="h-7 w-7 p-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive shrink-0"
+                              title="Delete sub link"
                             >
-                              <Trash2 className="h-3 w-3" />
+                              <Trash2 className="h-3.5 w-3.5" />
                             </Button>
                           </div>
                         </Card>
@@ -909,7 +910,7 @@ export default function AdminNavPage() {
         </div>
 
         {/* Right Column: Header Action Settings & "+ Add Menu Item" Card */}
-        <div className="lg:col-span-4 space-y-5">
+        <div className="xl:col-span-4 space-y-5">
           {/* Header Action & Phone Settings Card */}
           <Card className="p-5 border-border shadow-md rounded-2xl bg-card space-y-4">
             <div className="flex items-center justify-between border-b border-border pb-3">
