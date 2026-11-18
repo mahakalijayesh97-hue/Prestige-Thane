@@ -276,6 +276,10 @@ export interface GlobalThemeSettings {
   advisor_chat_action_2?: string;
   advisor_chat_whatsapp?: string;
   advisor_chat_prefill?: string;
+  robots_txt_content?: string;
+  llms_txt_content?: string;
+  sitemap_custom_urls?: string;
+  sitemap_auto_sync?: boolean;
   advisor_chat_advisors?: Array<{
     id: string;
     name: string;
@@ -325,6 +329,10 @@ export async function getGlobalThemeSettings(): Promise<GlobalThemeSettings> {
         advisor_chat_action_2: doc.advisor_chat_action_2 || 'Request Master & Floor Plan Layouts',
         advisor_chat_whatsapp: doc.advisor_chat_whatsapp || '919022222448',
         advisor_chat_prefill: doc.advisor_chat_prefill || 'Hi, I would like to receive pre-launch early access updates',
+        robots_txt_content: doc.robots_txt_content || '',
+        llms_txt_content: doc.llms_txt_content || '',
+        sitemap_custom_urls: doc.sitemap_custom_urls || '',
+        sitemap_auto_sync: doc.sitemap_auto_sync !== false,
         advisor_chat_advisors:
           Array.isArray(doc.advisor_chat_advisors) && doc.advisor_chat_advisors.length > 0
             ? doc.advisor_chat_advisors

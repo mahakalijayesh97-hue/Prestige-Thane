@@ -55,6 +55,12 @@ export interface IThemeSetting extends Document {
   advisor_chat_prefill: string;
   advisor_chat_advisors: IAdvisorItem[];
 
+  // SEO & AI Crawler Files
+  robots_txt_content: string;
+  llms_txt_content: string;
+  sitemap_custom_urls: string;
+  sitemap_auto_sync: boolean;
+
   created_at: Date;
   updated_at: Date;
 }
@@ -132,6 +138,39 @@ const ThemeSettingSchema = new Schema<IThemeSetting>(
       ],
       default: [],
     },
+
+    // SEO & AI Crawler Files
+    robots_txt_content: {
+      type: String,
+      default: `User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/auth/
+Disallow: /api/dashboard/
+
+Sitemap: https://prestige-thane.vercel.app/sitemap.xml`,
+    },
+    llms_txt_content: {
+      type: String,
+      default: `# Prestige Thane
+> Pre-launch Luxury 2, 3 & 4 BHK residences in Thane West by Prestige Group.
+
+## Core Information
+- Developer: Prestige Group
+- Location: Balkum, Kapurbawadi, Thane West, Maharashtra
+- Starting Price: ₹1.59 Cr*
+- Possession: Dec 2028
+- Contact: +91 90222 22448
+
+## Key Pages & Sections
+- [Overview](https://prestige-thane.vercel.app/#overview): Master layout and township details.
+- [Pricing](https://prestige-thane.vercel.app/#pricing): Unit configurations and pricing breakups.
+- [Floor Plans](https://prestige-thane.vercel.app/#floor-plans): 2, 3 & 4 BHK unit plans.
+- [Amenities](https://prestige-thane.vercel.app/#amenities): Clubhouse and lifestyle features.
+- [Contact](https://prestige-thane.vercel.app/contact): Official sales enquiry desk.`,
+    },
+    sitemap_custom_urls: { type: String, default: '' },
+    sitemap_auto_sync: { type: Boolean, default: true },
   },
   {
     strict: false,

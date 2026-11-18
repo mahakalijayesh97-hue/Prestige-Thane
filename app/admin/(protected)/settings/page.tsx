@@ -6,6 +6,7 @@ import { logActivity } from '@/lib/admin';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { SeoCrawlerManager } from '@/components/admin/seo-crawler-manager';
 import {
   Settings as SettingsIcon,
   Send,
@@ -1246,6 +1247,9 @@ export default function AdminSettingsPage() {
           </div>
         </div>
       </div>
+
+      {/* ─── SEARCH ENGINES & AI CRAWLER MANAGEMENT (robots.txt, llms.txt, sitemap.xml) ─── */}
+      <SeoCrawlerManager />
 
       {/* ─── WIDE SECTION 1: PRESTIGE PROJECT LAUNCH & SHOWCASE ─── */}
       <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs space-y-5">
