@@ -7,6 +7,8 @@ import { useAuth } from '@/components/auth/auth-provider';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PageActionModal, PageSummary } from '@/components/admin/page-action-modal';
+import Swal from 'sweetalert2';
+import 'sweetalert2/dist/sweetalert2.min.css';
 import {
   LayoutDashboard,
   FileText,
@@ -84,6 +86,24 @@ function prefetchAdminData(href: string) {
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
   const pathname = usePathname();
+
+  const handleSignOut = async () => {
+    const result = await Swal.fire({
+      title: 'Sign out?',
+      text: 'Are you sure you want to sign out of the admin console?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Yes, sign out',
+      cancelButtonText: 'Cancel',
+      reverseButtons: true,
+    });
+
+    if (result.isConfirmed) {
+      await signOut();
+    }
+  };
   const [collapsed, setCollapsed] = useState(false);
   const [pagesList, setPagesList] = useState<PageSummary[]>([]);
   const [pagesSubmenuOpen, setPagesSubmenuOpen] = useState(true);
@@ -720,7 +740,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                   </div>
 
                   <button
-                    onClick={() => signOut()}
+                    onClick={handleSignOut}
                     className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors shrink-0"
                     title="Sign out"
                     aria-label="Sign out"
@@ -737,7 +757,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => signOut()}
+              onClick={handleSignOut}
               className="w-full h-8 rounded-xl text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition"
               title="Sign out"
             >
