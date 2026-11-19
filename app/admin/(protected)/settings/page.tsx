@@ -16,7 +16,6 @@ import {
   Sparkles,
   Palette,
   Type,
-  Code2,
   Share2,
   Twitter,
   Facebook,
@@ -143,12 +142,9 @@ export default function AdminSettingsPage() {
   const [siteNameColor, setSiteNameColor] = useState('#08172a');
   const [subSiteName, setSubSiteName] = useState('PHASE 1');
   const [subSiteNameColor, setSubSiteNameColor] = useState('#d97706');
-  const [customCss, setCustomCss] = useState(`// Add your custom CSS or JS here */\nbody { font-family: 'Inter', sans-serif; }`);
-  const [customJs, setCustomJs] = useState('');
-  const [headerScripts, setHeaderScripts] = useState('');
 
   // Active Category Tab Filter
-  type SettingsTab = 'all' | 'branding' | 'contact' | 'code' | 'seo' | 'project' | 'chat';
+  type SettingsTab = 'all' | 'branding' | 'contact' | 'seo' | 'project' | 'chat';
   const [activeTab, setActiveTab] = useState<SettingsTab>('all');
 
   // Prestige Project Showcase & Launch States
@@ -213,23 +209,6 @@ export default function AdminSettingsPage() {
   const [editingUrlAdvisorId, setEditingUrlAdvisorId] = useState<string | null>(null);
   const [advisorUrlDraft, setAdvisorUrlDraft] = useState('');
   const advisorFileInputRef = useRef<HTMLInputElement>(null);
-
-  const addCdnPreset = (type: 'bootstrap' | 'jquery' | 'css' | 'js') => {
-    let snippet = '';
-    if (type === 'bootstrap') {
-      snippet = `<!-- Bootstrap 5 CDN -->\n<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />\n<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>`;
-    } else if (type === 'jquery') {
-      snippet = `<!-- jQuery 3.7.1 -->\n<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>`;
-    } else if (type === 'css') {
-      snippet = `/* Global Custom Styles */\n:root {\n  --brand-primary: ${primaryColor};\n}`;
-    } else if (type === 'js') {
-      snippet = `// Global Custom Scripts\nconsole.log('Prestige site loaded');`;
-    }
-
-    if (!customCss.includes(snippet.trim())) {
-      setCustomCss((prev) => (prev ? `${prev}\n\n${snippet}` : snippet));
-    }
-  };
 
   useEffect(() => {
     loadSettings();
@@ -297,9 +276,6 @@ export default function AdminSettingsPage() {
         if (data.sub_site_name !== undefined) setSubSiteName(data.sub_site_name);
         if (data.sub_site_name_color) setSubSiteNameColor(data.sub_site_name_color);
         if (data.favicon_url) setFaviconUrl(data.favicon_url);
-        if (data.custom_css) setCustomCss(data.custom_css);
-        if (data.custom_js) setCustomJs(data.custom_js);
-        if (data.header_scripts) setHeaderScripts(data.header_scripts);
 
         if (data.project_title !== undefined) setProjectTitle(data.project_title);
         if (data.project_category !== undefined) setProjectCategory(data.project_category);
@@ -374,9 +350,6 @@ export default function AdminSettingsPage() {
           sub_site_name: subSiteName,
           sub_site_name_color: subSiteNameColor,
           favicon_url: faviconUrl,
-          custom_css: customCss,
-          custom_js: customJs,
-          header_scripts: headerScripts,
           project_title: projectTitle,
           project_category: projectCategory,
           project_subtitle: projectSubtitle,
@@ -744,7 +717,6 @@ export default function AdminSettingsPage() {
             { id: 'all', label: 'All Settings', icon: SlidersHorizontal },
             { id: 'branding', label: 'Branding & Theme', icon: Palette },
             { id: 'contact', label: 'Contact & Social', icon: Phone },
-            { id: 'code', label: 'Custom Code & Scripts', icon: Code2 },
             { id: 'seo', label: 'SEO & AI Crawlers', icon: Bot },
             { id: 'project', label: 'Project Showcase', icon: Sparkles },
             { id: 'chat', label: 'Live Chat Widget', icon: MessageSquare },
@@ -1261,70 +1233,7 @@ export default function AdminSettingsPage() {
           </>
           )}
 
-          {/* 5. Global Custom CSS & JavaScript */}
-          {activeTab === 'all' && (
-            <div className="rounded-2xl border border-border/80 bg-card p-6 shadow-xs space-y-3.5">
-              <div className="flex items-center gap-2.5">
-                <div className="h-7 w-7 rounded-lg bg-cyan-500/10 flex items-center justify-center text-cyan-600">
-                  <Code2 className="h-4 w-4" />
-                </div>
-                <div>
-                  <h2 className="text-sm font-bold text-foreground">
-                    Global Custom CSS &amp; JavaScript
-                  </h2>
-                  <p className="text-[11px] text-muted-foreground">
-                  Add your custom CSS styles, Google Analytics (GA4), Meta Pixel, chat widgets, or tracking scripts applied across the website.
-                </p>
-              </div>
-            </div>
-
-            {/* CDN quick pills */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[11px] text-slate-500 font-medium">CDN Libraries:</span>
-              <button
-                type="button"
-                onClick={() => addCdnPreset('bootstrap')}
-                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border border-blue-200 bg-blue-50/70 text-[11px] font-medium text-blue-700 hover:bg-blue-100 transition-colors"
-              >
-                <span>📦 Bootstrap 5</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => addCdnPreset('jquery')}
-                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border border-purple-200 bg-purple-50/70 text-[11px] font-medium text-purple-700 hover:bg-purple-100 transition-colors"
-              >
-                <span>🎵 jQuery</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => addCdnPreset('css')}
-                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border border-emerald-200 bg-emerald-50/70 text-[11px] font-medium text-emerald-700 hover:bg-emerald-100 transition-colors"
-              >
-                <span>🌿 Global CSS</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => addCdnPreset('js')}
-                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border border-amber-200 bg-amber-50/70 text-[11px] font-medium text-amber-700 hover:bg-amber-100 transition-colors"
-              >
-                <span>⚡ Global JavaScript</span>
-              </button>
-            </div>
-
-            {/* Monospace Code Editor Area */}
-            <div className="relative rounded-xl border border-slate-200 bg-slate-50/70 p-3 font-mono text-xs">
-              <textarea
-                rows={4}
-                value={customCss}
-                onChange={(e) => setCustomCss(e.target.value)}
-                placeholder="// Add your custom CSS or JS here */"
-                className="w-full bg-transparent border-0 text-slate-800 placeholder:text-slate-400 focus:outline-none resize-none font-mono text-xs leading-relaxed"
-              />
-            </div>
-          </div>
-          )}
-
-          {/* 6. Social Profiles */}
+          {/* 5. Social Profiles */}
           {(activeTab === 'all' || activeTab === 'contact') && (
             <div className="rounded-2xl border border-border/80 bg-card p-6 shadow-xs space-y-4">
               <div className="flex items-center gap-2.5">
@@ -1410,106 +1319,6 @@ export default function AdminSettingsPage() {
           )}
         </div>
       </div>
-      )}
-
-      {/* ─── DEDICATED FULL-WIDTH CODE & SCRIPTS EDITOR (activeTab === 'code') ─── */}
-      {activeTab === 'code' && (
-        <div className="rounded-2xl border border-border/80 bg-card p-6 shadow-xs space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border/60 pb-4">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-cyan-500/10 flex items-center justify-center text-cyan-600">
-                <Code2 className="h-5 w-5" />
-              </div>
-              <div>
-                <h2 className="text-base font-bold text-foreground">
-                  Global Custom Code, CSS &amp; JavaScript
-                </h2>
-                <p className="text-xs text-muted-foreground">
-                  Inject sitewide custom styling, Google Analytics (GA4), Meta Pixel, custom tag managers, and CDN libraries.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                onClick={save}
-                disabled={saving}
-                className="h-9 px-4 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold shadow-xs cursor-pointer gap-2"
-              >
-                {saving ? (
-                  <>
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    <span>Saving...</span>
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-3.5 w-3.5" />
-                    <span>Save Code &amp; Settings</span>
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-
-          {/* Quick CDN Library Inserters */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-muted/40 border border-border/60">
-            <div className="space-y-0.5">
-              <span className="text-xs font-bold text-foreground">One-Click CDN Library Snippets</span>
-              <p className="text-[11px] text-muted-foreground">Click any library badge to insert its verified CDN tags into your editor.</p>
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <button
-                type="button"
-                onClick={() => addCdnPreset('bootstrap')}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-blue-500/30 bg-blue-500/10 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 transition cursor-pointer"
-              >
-                <span>📦 Bootstrap 5</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => addCdnPreset('jquery')}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-purple-500/30 bg-purple-500/10 text-xs font-semibold text-purple-600 dark:text-purple-400 hover:bg-purple-500/20 transition cursor-pointer"
-              >
-                <span>🎵 jQuery 3.7</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => addCdnPreset('css')}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition cursor-pointer"
-              >
-                <span>🌿 Sample CSS Rule</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => addCdnPreset('js')}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 text-xs font-semibold text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 transition cursor-pointer"
-              >
-                <span>⚡ Sample JS Script</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Full-size Code Editor Area */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
-              <span className="font-mono text-[11px] font-semibold text-foreground">Global Script Buffer</span>
-              <span className="text-[11px] font-mono">{customCss.length} characters</span>
-            </div>
-            <div className="relative rounded-xl border border-border bg-slate-950 p-4 font-mono text-xs shadow-inner">
-              <textarea
-                rows={16}
-                value={customCss}
-                onChange={(e) => setCustomCss(e.target.value)}
-                placeholder="/* Add your custom <style> or <script> tags here. They will be executed across all public website pages. */"
-                className="w-full bg-transparent border-0 text-slate-100 placeholder:text-slate-500 focus:outline-none resize-y font-mono text-xs leading-relaxed"
-              />
-            </div>
-            <p className="text-[11px] text-muted-foreground px-1">
-              Note: You can include both inline <code className="text-primary font-mono">&lt;style&gt;</code> and <code className="text-primary font-mono">&lt;script&gt;</code> tags. They are injected into the site layout head and footer automatically.
-            </p>
-          </div>
-        </div>
       )}
 
       {/* ─── SEARCH ENGINES & AI CRAWLER MANAGEMENT (robots.txt, llms.txt, sitemap.xml) ─── */}

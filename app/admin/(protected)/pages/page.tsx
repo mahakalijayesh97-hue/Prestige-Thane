@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { getSupabaseBrowser } from '@/lib/supabase/browser';
 import { logActivity } from '@/lib/admin';
+import Swal from 'sweetalert2';
 import { PageActionModal } from '@/components/admin/page-action-modal';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +20,7 @@ import {
   Search,
   ExternalLink,
   Copy,
+  CopyPlus,
   Check,
   RefreshCw,
   Layers,
@@ -130,6 +132,62 @@ export default function AdminPagesPage() {
     }
     await logActivity('delete', 'page', title, id);
     load();
+  }
+
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
+
+  async function duplicatePage(page: Row) {
+    const pageKey = page.id || (page as any)._id || page.slug;
+    if (!pageKey) return;
+
+    const result = await Swal.fire({
+      title: 'Duplicate Page?',
+      html: `Create an exact clone of <b class="text-blue-600">"${page.title}"</b>?<br/><span class="text-xs text-muted-foreground mt-1 block">A unique slug suffix will be generated automatically and saved in Draft status.</span>`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, duplicate',
+      cancelButtonText: 'Cancel',
+      confirmButtonColor: '#2563eb',
+      cancelButtonColor: '#64748b',
+    });
+
+    if (!result.isConfirmed) return;
+
+    setDuplicatingId(pageKey);
+    try {
+      const res = await fetch(`/api/pages/${pageKey}/duplicate`, {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to duplicate page');
+      }
+
+      await logActivity('create', 'page', `Duplicated page: ${page.title} -> ${data.page?.title || ''}`);
+      await load();
+
+      Swal.fire({
+        title: 'Page Duplicated!',
+        html: `Created <b class="text-blue-600">"${data.page.title}"</b><br/><span class="text-xs font-mono text-slate-600 mt-1 block">Route: /${data.page.slug}</span>`,
+        icon: 'success',
+        showCancelButton: true,
+        confirmButtonText: 'Edit Cloned Page',
+        cancelButtonText: 'Stay on List',
+        confirmButtonColor: '#2563eb',
+      }).then((nav) => {
+        if (nav.isConfirmed && data.page.id) {
+          window.location.href = `/admin/pages/${data.page.id}`;
+        }
+      });
+    } catch (err: any) {
+      Swal.fire({
+        title: 'Duplication Failed',
+        text: err.message || 'Could not duplicate page',
+        icon: 'error',
+      });
+    } finally {
+      setDuplicatingId(null);
+    }
   }
 
   function handleCopyUrl(slug: string) {
@@ -554,6 +612,22 @@ export default function AdminPagesPage() {
                             >
                               <Pencil className="h-4 w-4" />
                             </Link>
+                          </Button>
+
+                          {/* Duplicate Page */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            disabled={duplicatingId === (r.id || (r as any)._id || r.slug)}
+                            onClick={() => duplicatePage(r)}
+                            className="h-8 w-8 p-0 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg"
+                            title="Duplicate page"
+                          >
+                            {duplicatingId === (r.id || (r as any)._id || r.slug) ? (
+                              <RefreshCw className="h-3.5 w-3.5 animate-spin text-blue-600" />
+                            ) : (
+                              <CopyPlus className="h-4 w-4" />
+                            )}
                           </Button>
 
                           {/* Delete (disabled for homepage) */}

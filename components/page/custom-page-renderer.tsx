@@ -83,6 +83,23 @@ export function CustomPageRenderer({
   const segments = useMemo(() => parseHtmlSegments(html), [html]);
 
   useEffect(() => {
+    // If Tailwind CDN is loaded on the page, trigger refresh so newly rendered custom HTML classes (e.g. bg-red-500) compile immediately
+    if (typeof window !== 'undefined') {
+      const triggerTailwind = () => {
+        if (typeof (window as any).tailwind?.refresh === 'function') {
+          try {
+            (window as any).tailwind.refresh();
+          } catch {}
+        }
+      };
+
+      triggerTailwind();
+      const timer = setTimeout(triggerTailwind, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [segments]);
+
+  useEffect(() => {
     if (!js || !containerRef.current) return;
 
     const runScript = () => {
@@ -145,6 +162,7 @@ export function CustomPageRenderer({
             <div
               key={`html-block-${idx}`}
               suppressHydrationWarning
+              className="not-prose"
               dangerouslySetInnerHTML={{
                 __html: seg.content || '',
               }}

@@ -14,7 +14,7 @@ export function ExternalScriptsLoader({ headerScripts }: { headerScripts?: strin
       const links = temp.querySelectorAll('link');
       links.forEach((l) => {
         const href = l.getAttribute('href');
-        if (href && !document.querySelector(`link[href="${href}"]`)) {
+        if (href && !document.head.querySelector(`link[href="${href}"]`)) {
           const linkEl = document.createElement('link');
           Array.from(l.attributes).forEach((attr) => {
             linkEl.setAttribute(attr.name, attr.value);
@@ -23,17 +23,37 @@ export function ExternalScriptsLoader({ headerScripts }: { headerScripts?: strin
         }
       });
 
-      // 2. Process <script> elements (Bootstrap, jQuery, Tailwind, etc.)
+      // 2. Process <script> elements (Tailwind Play CDN, Bootstrap, jQuery, Google Analytics, etc.)
       const scripts = temp.querySelectorAll('script');
       scripts.forEach((s) => {
         const src = s.getAttribute('src');
         if (src) {
-          if (!document.querySelector(`script[src="${src}"]`)) {
+          // Check if already in document.head
+          const alreadyInHead = document.head.querySelector(`script[src="${src}"]`);
+          if (!alreadyInHead) {
             const scriptEl = document.createElement('script');
             Array.from(s.attributes).forEach((attr) => {
               scriptEl.setAttribute(attr.name, attr.value);
             });
+            // Ensure script executes reliably
+            scriptEl.async = false;
+
+            // Trigger Tailwind scan if Tailwind CDN is loaded
+            if (src.includes('tailwindcss.com')) {
+              scriptEl.onload = () => {
+                if (typeof (window as any).tailwind?.refresh === 'function') {
+                  try {
+                    (window as any).tailwind.refresh();
+                  } catch {}
+                }
+              };
+            }
+
             document.head.appendChild(scriptEl);
+          } else if (src.includes('tailwindcss.com') && typeof (window as any).tailwind?.refresh === 'function') {
+            try {
+              (window as any).tailwind.refresh();
+            } catch {}
           }
         } else if (s.textContent && s.textContent.trim()) {
           try {
@@ -52,4 +72,5 @@ export function ExternalScriptsLoader({ headerScripts }: { headerScripts?: strin
 
   return null;
 }
+
 

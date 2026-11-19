@@ -238,26 +238,28 @@ export function InlineLeadForm({
           { id: 'f_email', name: 'email', label: 'Email Address', type: 'email', placeholder: 'your.email@example.com', required: false },
         ];
 
+  const displayTitle = form.title?.trim() || formTitle?.trim() || 'Pre-Launch Priority Enquiry';
+
   return (
     <section className={`w-full max-w-4xl mx-auto my-12 px-4 sm:px-6 not-prose ${className}`}>
-      <div className="relative rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xl sm:shadow-2xl overflow-hidden">
-        {/* Top gold accent gradient bar */}
+      <div className="relative rounded-3xl bg-white border border-slate-200/90 shadow-2xl shadow-slate-900/10 overflow-hidden text-slate-800">
+        {/* Top luxury gold accent gradient bar */}
         <div className="h-1.5 w-full bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600" />
 
         <div className="p-6 sm:p-10">
           {/* Header */}
-          <div className="text-center max-w-xl mx-auto space-y-2 mb-8">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-200/80 dark:border-amber-900/60 shadow-2xs">
-              <Sparkles className="w-3.5 h-3.5" />
+          <div className="text-center max-w-xl mx-auto space-y-2.5 mb-8">
+            <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-amber-50 text-amber-800 border border-amber-200/80 shadow-2xs">
+              <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0" />
               <span>{form.partner_name ? `${form.partner_name} • Pre-Launch Desk` : 'Pre-Launch Priority Desk'}</span>
             </div>
 
-            <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-              {form.title}
+            <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+              {displayTitle}
             </h3>
 
             {form.description && (
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-lg mx-auto">
                 {form.description}
               </p>
             )}
@@ -265,21 +267,21 @@ export function InlineLeadForm({
 
           {/* Success Notification */}
           {isSuccess ? (
-            <div className="p-8 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 text-center space-y-3 animate-in zoom-in-95 duration-200">
-              <div className="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto shadow-sm">
+            <div className="p-8 rounded-2xl bg-emerald-50 border border-emerald-200 text-center space-y-3 animate-in zoom-in-95 duration-200">
+              <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-sm">
                 <CheckCircle2 className="w-8 h-8" />
               </div>
-              <h4 className="text-lg font-bold text-emerald-900 dark:text-emerald-200">
+              <h4 className="text-lg font-bold text-emerald-950">
                 Inquiry Received Successfully!
               </h4>
-              <p className="text-xs sm:text-sm text-emerald-700 dark:text-emerald-300 max-w-md mx-auto">
+              <p className="text-xs sm:text-sm text-emerald-800 max-w-md mx-auto">
                 Thank you! Our dedicated project advisor has received your request and will contact you directly with official pricing, brochures, and floor plans.
               </p>
               <div className="pt-2">
                 <button
                   type="button"
                   onClick={() => setIsSuccess(false)}
-                  className="px-5 py-2 text-xs font-semibold rounded-full bg-emerald-600 hover:bg-emerald-700 text-white transition shadow-sm"
+                  className="px-5 py-2 text-xs font-semibold rounded-full bg-emerald-600 hover:bg-emerald-700 text-white transition shadow-sm cursor-pointer"
                 >
                   Submit Another Inquiry
                 </button>
@@ -295,7 +297,7 @@ export function InlineLeadForm({
             >
               {/* Error Message Alert */}
               {errorMessage && (
-                <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-xs text-rose-700 dark:text-rose-300 font-medium">
+                <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 font-medium">
                   {errorMessage}
                 </div>
               )}
@@ -317,10 +319,10 @@ export function InlineLeadForm({
 
                     return (
                       <div key={field.id} className="sm:col-span-2 space-y-2">
-                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                          {field.label} {field.required && <span className="text-amber-500">*</span>}
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                          {field.label} {field.required && <span className="text-amber-600">*</span>}
                         </label>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-2.5">
                           {optionsArray.map((opt) => {
                             const isSelected = (values[fieldName] || values.configuration) === opt;
                             return (
@@ -331,10 +333,10 @@ export function InlineLeadForm({
                                   handleChange(fieldName, opt);
                                   handleChange('configuration', opt);
                                 }}
-                                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                                   isSelected
-                                    ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-md shadow-amber-500/25 ring-2 ring-amber-400/50'
-                                    : 'bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700'
+                                    ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-md shadow-amber-500/25 ring-2 ring-amber-400/50 scale-[1.02]'
+                                    : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-300 hover:border-slate-400 shadow-2xs'
                                 }`}
                               >
                                 {opt}
@@ -350,15 +352,15 @@ export function InlineLeadForm({
                   if (field.type === 'textarea') {
                     return (
                       <div key={field.id} className="sm:col-span-2 space-y-1.5">
-                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                          {field.label} {field.required && <span className="text-amber-500">*</span>}
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                          {field.label} {field.required && <span className="text-amber-600">*</span>}
                         </label>
                         <textarea
                           rows={3}
                           value={values[fieldName] || ''}
                           onChange={(e) => handleChange(fieldName, e.target.value)}
                           placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}...`}
-                          className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/60 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition"
+                          className="w-full px-4 py-3 rounded-xl border border-slate-300 bg-white hover:border-slate-400 text-xs font-semibold text-slate-900 placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-500/15 transition shadow-2xs resize-none"
                         />
                       </div>
                     );
@@ -374,13 +376,13 @@ export function InlineLeadForm({
 
                     return (
                       <div key={field.id} className={`${isFullWidth ? 'sm:col-span-2' : ''} space-y-1.5`}>
-                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                          {field.label} {field.required && <span className="text-amber-500">*</span>}
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                          {field.label} {field.required && <span className="text-amber-600">*</span>}
                         </label>
                         <select
                           value={values[fieldName] || ''}
                           onChange={(e) => handleChange(fieldName, e.target.value)}
-                          className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/60 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition"
+                          className="w-full px-4 py-3 rounded-xl border border-slate-300 bg-white hover:border-slate-400 text-xs font-semibold text-slate-900 focus:outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-500/15 transition shadow-2xs cursor-pointer"
                         >
                           <option value="">Select option...</option>
                           {optionsArray.map((opt) => (
@@ -397,11 +399,11 @@ export function InlineLeadForm({
                   if (field.type === 'tel' || fieldName === 'phone') {
                     return (
                       <div key={field.id} className="space-y-1.5">
-                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                          {field.label} <span className="text-amber-500">*</span>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                          {field.label} <span className="text-amber-600">*</span>
                         </label>
-                        <div className="relative flex items-center">
-                          <span className="absolute left-3.5 text-xs font-bold text-slate-400 select-none">
+                        <div className="relative flex rounded-xl border border-slate-300 overflow-hidden bg-white hover:border-slate-400 focus-within:border-amber-500 focus-within:ring-4 focus-within:ring-amber-500/15 transition shadow-2xs">
+                          <span className="inline-flex items-center px-3.5 bg-slate-100 text-xs font-bold text-slate-700 border-r border-slate-300 select-none">
                             +91
                           </span>
                           <input
@@ -413,9 +415,9 @@ export function InlineLeadForm({
                               handleChange(fieldName, val);
                               handleChange('phone', val);
                             }}
-                            placeholder={field.placeholder || '90222 22448'}
+                            placeholder={field.placeholder || 'Enter 10-digit mobile number'}
                             required
-                            className="w-full pl-12 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/60 text-xs font-semibold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition"
+                            className="w-full px-4 py-3 bg-transparent text-xs font-semibold text-slate-900 placeholder:text-slate-400 placeholder:font-normal focus:outline-none"
                           />
                         </div>
                       </div>
@@ -425,8 +427,8 @@ export function InlineLeadForm({
                   // DEFAULT TEXT / EMAIL INPUTS
                   return (
                     <div key={field.id} className={`${isFullWidth ? 'sm:col-span-2' : ''} space-y-1.5`}>
-                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                        {field.label} {field.required && <span className="text-amber-500">*</span>}
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                        {field.label} {field.required && <span className="text-amber-600">*</span>}
                       </label>
                       <input
                         type={field.type === 'email' ? 'email' : 'text'}
@@ -434,7 +436,7 @@ export function InlineLeadForm({
                         onChange={(e) => handleChange(fieldName, e.target.value)}
                         placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}...`}
                         required={field.required}
-                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/60 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition"
+                        className="w-full px-4 py-3 rounded-xl border border-slate-300 bg-white hover:border-slate-400 text-xs font-semibold text-slate-900 placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-500/15 transition shadow-2xs"
                       />
                     </div>
                   );
@@ -448,14 +450,14 @@ export function InlineLeadForm({
                   type="button"
                   disabled={!!submittingAction}
                   onClick={() => handleSubmit(form.whatsapp_number ? 'whatsapp' : 'submit')}
-                  className="w-full sm:flex-1 py-3 px-5 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 hover:from-amber-600 hover:to-amber-800 text-white font-bold text-xs sm:text-sm shadow-lg shadow-amber-500/25 flex items-center justify-center gap-2 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70 cursor-pointer"
+                  className="w-full sm:flex-1 py-3.5 px-6 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 hover:from-amber-600 hover:to-amber-800 text-white font-bold text-xs sm:text-sm shadow-lg shadow-amber-500/25 flex items-center justify-center gap-2.5 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70 cursor-pointer"
                 >
                   {submittingAction === 'whatsapp' || submittingAction === 'submit' ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin text-white" />
                   ) : form.whatsapp_number ? (
-                    <MessageCircle className="w-4 h-4" />
+                    <MessageCircle className="w-4 h-4 text-white" />
                   ) : (
-                    <Send className="w-4 h-4" />
+                    <Send className="w-4 h-4 text-white" />
                   )}
                   <span>{form.button_1_text || 'Option 1 • Instant Details via WhatsApp'}</span>
                 </button>
@@ -466,12 +468,12 @@ export function InlineLeadForm({
                     type="button"
                     disabled={!!submittingAction}
                     onClick={() => handleSubmit('site_visit')}
-                    className="w-full sm:flex-1 py-3 px-5 rounded-2xl border border-slate-300 dark:border-slate-700 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-slate-800 dark:text-slate-200 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70 cursor-pointer"
+                    className="w-full sm:flex-1 py-3.5 px-6 rounded-2xl bg-[#0A192F] hover:bg-[#112240] text-amber-400 hover:text-amber-300 border border-amber-500/30 font-bold text-xs sm:text-sm shadow-md flex items-center justify-center gap-2.5 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70 cursor-pointer"
                   >
                     {submittingAction === 'site_visit' ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
                     ) : (
-                      <CalendarCheck className="w-4 h-4 text-amber-500" />
+                      <CalendarCheck className="w-4 h-4 text-amber-400" />
                     )}
                     <span>{form.button_2_text}</span>
                   </button>
@@ -479,9 +481,9 @@ export function InlineLeadForm({
               </div>
 
               {/* Disclaimer */}
-              <div className="pt-2 text-center flex items-center justify-center gap-1.5 text-[11px] text-slate-400 dark:text-slate-500">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                <span>{form.disclaimer || '100% Privacy Protected • Official pre-launch project updates only'}</span>
+              <div className="pt-2 text-center flex items-center justify-center gap-1.5 text-xs text-slate-500 font-medium">
+                <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>{form.disclaimer || '100% Privacy Protected • Zero spam • Official pre-launch project updates only'}</span>
               </div>
             </form>
           )}

@@ -1,9 +1,11 @@
 import { notFound } from 'next/navigation';
+import Script from 'next/script';
 import { getPublishedPage, getPublishedPages } from '@/lib/data';
 import { CustomPageRenderer } from '@/components/page/custom-page-renderer';
+import { ExternalScriptsLoader } from '@/components/layout/external-scripts';
 
-// Revalidate every 60 seconds — serves instant cached pages while keeping content fresh
-export const revalidate = 10;
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export async function generateStaticParams() {
   try {
@@ -52,16 +54,45 @@ export default async function PagePage({ params }: Props) {
           }}
         />
       )}
-      {page.head_scripts && (
-        <div
-          style={{ display: 'none' }}
-          dangerouslySetInnerHTML={{ __html: page.head_scripts }}
+
+      {/* Ensure Tailwind CDN is active for custom blocks and pages with Tailwind classes */}
+      {(page.enable_tailwind_cdn || (page.content && (page.content.includes('bg-') || page.content.includes('text-') || page.content.includes('flex') || page.content.includes('grid')))) && (
+        <Script
+          key={`page-tailwind-cdn-${page.slug}`}
+          src="https://cdn.tailwindcss.com"
+          strategy="afterInteractive"
         />
       )}
+
+      {/* Page-level head scripts */}
+      {page.head_scripts && (
+        <ExternalScriptsLoader headerScripts={page.head_scripts} />
+      )}
+
+      {/* Page-level custom CSS */}
+      {page.custom_css && (
+        <style
+          id={`page-custom-css-${page.slug}`}
+          dangerouslySetInnerHTML={{ __html: page.custom_css }}
+        />
+      )}
+
+      {/* Page-level custom JS */}
+      {page.custom_js && (
+        <Script
+          key={`page-custom-js-${page.slug}`}
+          id={`page-custom-js-${page.slug}`}
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `try { ${page.custom_js} } catch(e) { console.error('Error in custom page JS:', e); }`,
+          }}
+        />
+      )}
+
       <main className="w-full">
         {page.hero_image && (
           <div className="mx-auto max-w-7xl px-4 pt-8 sm:px-6 lg:px-8">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={page.hero_image}
               alt={page.title}
@@ -70,15 +101,15 @@ export default async function PagePage({ params }: Props) {
               className="mb-8 aspect-[16/7] w-full rounded-xl object-cover"
             />
           </div>
-      )}
-        {!hasContent ? (
-        <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
-          <h1 className="text-4xl font-bold tracking-tight">{page.title}</h1>
-          </div>
-      ) : (
-        <CustomPageRenderer content={page.content} className="prose-content w-full max-w-none" />
         )}
-    </main>
+        {!hasContent ? (
+          <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
+            <h1 className="text-4xl font-bold tracking-tight">{page.title}</h1>
+          </div>
+        ) : (
+          <CustomPageRenderer content={page.content} className="prose-content w-full max-w-none" />
+        )}
+      </main>
     </>
   );
 }

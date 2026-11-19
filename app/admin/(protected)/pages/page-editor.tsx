@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { getSupabaseBrowser } from '@/lib/supabase/browser';
 import { logActivity } from '@/lib/admin';
+import Swal from 'sweetalert2';
 import { parsePageContent, buildPageContent } from '@/lib/page-content';
 import { PRESTIGE_HERO_TEMPLATE } from '@/lib/templates/hero-template';
 import { LEAD_CAPTURE_SECTION_TEMPLATE } from '@/lib/templates/LeadCaptureSection';
@@ -29,6 +30,7 @@ import {
   Plus,
   Trash2,
   Copy,
+  CopyPlus,
   Check,
   Globe,
   Code2,
@@ -772,6 +774,60 @@ export function PageEditor({ pageId }: { pageId?: string }) {
     }
   }
 
+  const [duplicating, setDuplicating] = useState(false);
+
+  async function duplicateCurrentPage() {
+    if (!validPageId) return;
+
+    const result = await Swal.fire({
+      title: 'Duplicate Page?',
+      html: `Create an exact copy of <b class="text-blue-600">"${title || 'this page'}"</b>?<br/><span class="text-xs text-muted-foreground mt-1 block">A unique slug suffix will be generated and saved in Draft.</span>`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, duplicate',
+      cancelButtonText: 'Cancel',
+      confirmButtonColor: '#2563eb',
+      cancelButtonColor: '#64748b',
+    });
+
+    if (!result.isConfirmed) return;
+
+    setDuplicating(true);
+    try {
+      const res = await fetch(`/api/pages/${validPageId}/duplicate`, {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to duplicate page');
+      }
+
+      await logActivity('create', 'page', `Duplicated page: ${title} -> ${data.page?.title || ''}`);
+
+      Swal.fire({
+        title: 'Page Duplicated!',
+        html: `Created <b class="text-blue-600">"${data.page.title}"</b><br/><span class="text-xs font-mono text-slate-600 mt-1 block">Route: /${data.page.slug}</span>`,
+        icon: 'success',
+        confirmButtonText: 'Edit Cloned Page',
+        showCancelButton: true,
+        cancelButtonText: 'Stay on Current Page',
+        confirmButtonColor: '#2563eb',
+      }).then((nav) => {
+        if (nav.isConfirmed && data.page.id) {
+          router.push(`/admin/pages/${data.page.id}`);
+        }
+      });
+    } catch (err: any) {
+      Swal.fire({
+        title: 'Duplication Failed',
+        text: err.message || 'Could not duplicate page',
+        icon: 'error',
+      });
+    } finally {
+      setDuplicating(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="grid place-items-center py-24">
@@ -879,6 +935,25 @@ export function PageEditor({ pageId }: { pageId?: string }) {
                 <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
                 <span className="hidden sm:inline">View Page</span>
               </a>
+            </Button>
+          )}
+
+          {validPageId && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={duplicating}
+              onClick={duplicateCurrentPage}
+              className="h-8 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+              title="Duplicate this page"
+            >
+              {duplicating ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-500" />
+              ) : (
+                <CopyPlus className="h-3.5 w-3.5 text-blue-500" />
+              )}
+              <span className="hidden sm:inline">Duplicate</span>
             </Button>
           )}
 
@@ -2086,14 +2161,14 @@ export function PageEditor({ pageId }: { pageId?: string }) {
                           <head>
                             <meta charset="utf-8">
                             <meta name="viewport" content="width=device-width, initial-scale=1">
-                            ${enableTailwindCdn ? '<script src="https://cdn.tailwindcss.com"></script>' : ''}
+                            <script src="https://cdn.tailwindcss.com"></script>
                             <style>
-                              body { font-family: system-ui, sans-serif; margin: 1rem; color: #1e293b; }
+                              body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; color: #1e293b; }
                               ${blockCssContent}
                             </style>
                           </head>
                           <body>
-                            ${blockHtmlContent || '<p style="color:#94a3b8; font-style:italic;">No HTML content yet.</p>'}
+                            ${blockHtmlContent || '<p style="color:#94a3b8; font-style:italic; padding: 1rem;">No HTML content yet.</p>'}
                             <script>
                               try { ${blockJsContent} } catch (e) { console.error(e); }
                             </script>

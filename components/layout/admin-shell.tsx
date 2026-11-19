@@ -50,6 +50,7 @@ const nav = [
   { href: '/admin/footer', label: 'Footer', icon: FooterIcon },
   { href: '/admin/media', label: 'Media', icon: ImageIcon },
   { href: '/admin/contact', label: 'Messages', icon: Mail },
+  { href: '/admin/custom-code', label: 'Custom Code & CDN', icon: Code2 },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 
@@ -59,6 +60,7 @@ const API_PREFETCH_MAP: Record<string, string[]> = {
   '/admin/nav': ['/api/nav', '/api/settings/theme'],
   '/admin/forms': ['/api/forms'],
   '/admin/media': ['/api/media'],
+  '/admin/custom-code': ['/api/settings/theme'],
   '/admin/settings': ['/api/settings/theme'],
   '/admin/footer': ['/api/footer/custom', '/api/footer/columns', '/api/footer/links'],
   '/admin/contact': ['/api/leads', '/api/forms'],
@@ -106,7 +108,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   };
   const [collapsed, setCollapsed] = useState(false);
   const [pagesList, setPagesList] = useState<PageSummary[]>([]);
-  const [pagesSubmenuOpen, setPagesSubmenuOpen] = useState(true);
+  const [pagesSubmenuOpen, setPagesSubmenuOpen] = useState(() => pathname.startsWith('/admin/pages'));
   const [isActionModalOpen, setIsActionModalOpen] = useState(false);
   const [actionModalPageId, setActionModalPageId] = useState<string | null>(null);
   const [draggedPageIndex, setDraggedPageIndex] = useState<number | null>(null);
@@ -115,8 +117,14 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   // Forms submenu state for Messages
   const [formsList, setFormsList] = useState<FormSummary[]>([]);
-  const [messagesSubmenuOpen, setMessagesSubmenuOpen] = useState(true);
+  const [messagesSubmenuOpen, setMessagesSubmenuOpen] = useState(() => pathname.startsWith('/admin/contact') || pathname.startsWith('/admin/messages'));
   const [currentFormParam, setCurrentFormParam] = useState<string | null>(null);
+
+  // Auto-collapse submenus when on other pages, auto-expand when on that section
+  useEffect(() => {
+    setPagesSubmenuOpen(pathname.startsWith('/admin/pages'));
+    setMessagesSubmenuOpen(pathname.startsWith('/admin/contact') || pathname.startsWith('/admin/messages'));
+  }, [pathname]);
 
   // Sync current form query param from URL
   useEffect(() => {
