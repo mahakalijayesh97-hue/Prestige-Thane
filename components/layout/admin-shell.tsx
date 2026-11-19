@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/components/auth/auth-provider';
 import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PageActionModal, PageSummary } from '@/components/admin/page-action-modal';
 import {
   LayoutDashboard,
@@ -661,36 +662,88 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
-        <div className="border-t border-border/80 p-2.5 space-y-1 bg-card">
+        {/* Sidebar Footer */}
+        <div className="border-t border-border/80 p-2.5 space-y-2 bg-card">
+          {/* View Live Site Quick Action */}
           <Link
             href="/"
             target="_blank"
-            className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 dark:text-slate-400 dark:hover:text-slate-100 dark:hover:bg-slate-800/60 transition ${
-              collapsed ? 'justify-center' : ''
+            className={`group flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50/70 dark:text-slate-400 dark:hover:text-blue-400 dark:hover:bg-blue-950/40 border border-transparent hover:border-blue-100 dark:hover:border-blue-900/50 transition-all ${
+              collapsed ? 'justify-center px-0' : ''
             }`}
             title="View Live Site"
           >
-            <ExternalLink className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-            {!collapsed && <span>View live site</span>}
-          </Link>
-          {!collapsed && user && (
-            <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80">
-              <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-bold text-[10px] flex items-center justify-center shrink-0 shadow-2xs">
-                {user.email ? user.email.charAt(0).toUpperCase() : 'A'}
+            <div className="p-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-blue-100 group-hover:text-blue-600 dark:group-hover:bg-blue-900/60 dark:group-hover:text-blue-300 transition-colors">
+              <Globe className="h-3.5 w-3.5 shrink-0" />
+            </div>
+            {!collapsed && (
+              <div className="flex items-center justify-between flex-1 min-w-0">
+                <span className="truncate">View live site</span>
+                <ExternalLink className="h-3 w-3 text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors ml-1 shrink-0" />
               </div>
-              <span className="text-[11px] font-medium text-slate-600 dark:text-slate-400 truncate flex-1">
-                {user.email}
-              </span>
+            )}
+          </Link>
+
+          {/* User Profile Card */}
+          {user && (
+            <div
+              className={`relative flex items-center gap-2.5 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/60 p-2 transition-all ${
+                collapsed ? 'justify-center p-1.5' : ''
+              }`}
+            >
+              {/* Avatar with optional image and status indicator */}
+              <div className="relative shrink-0">
+                <Avatar className="h-8 w-8 ring-1 ring-slate-200 dark:ring-slate-700 shadow-2xs">
+                  {(user as any)?.avatar_url && (
+                    <AvatarImage src={(user as any).avatar_url} alt={user.email || 'Admin'} />
+                  )}
+                  <AvatarFallback className="bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-bold text-xs">
+                    {user.email ? user.email.charAt(0).toUpperCase() : 'A'}
+                  </AvatarFallback>
+                </Avatar>
+                <span
+                  className="absolute bottom-0 right-0 h-2 w-2 rounded-full bg-emerald-500 ring-1.5 ring-white dark:ring-slate-900"
+                  title="Online"
+                />
+              </div>
+
+              {/* User info & Sign out button */}
+              {!collapsed && (
+                <>
+                  <div className="flex flex-col min-w-0 flex-1">
+                    <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate leading-tight">
+                      {user.name || (user.email ? user.email.split('@')[0] : 'Admin')}
+                    </span>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5" title={user.email}>
+                      {user.email}
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={() => signOut()}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors shrink-0"
+                    title="Sign out"
+                    aria-label="Sign out"
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </button>
+                </>
+              )}
             </div>
           )}
-          <Button
-            variant="ghost"
-            onClick={() => signOut()}
-            className={`w-full justify-${collapsed ? 'center' : 'start'} rounded-xl text-xs font-medium text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition`}
-          >
-            <LogOut className="h-3.5 w-3.5" />
-            {!collapsed && <span className="ml-2">Sign out</span>}
-          </Button>
+
+          {/* Collapsed Sign Out Button */}
+          {collapsed && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => signOut()}
+              className="w-full h-8 rounded-xl text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition"
+              title="Sign out"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+            </Button>
+          )}
         </div>
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
