@@ -236,6 +236,7 @@ export const EarlyAccessModal: React.FC<EarlyAccessModalProps> = ({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          form_slug: formDef.slug || 'early-access-modal',
           name: defaultName,
           phone: phone,
           email: email,

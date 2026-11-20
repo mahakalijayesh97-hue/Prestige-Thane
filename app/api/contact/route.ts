@@ -50,6 +50,21 @@ export async function POST(req: NextRequest) {
       console.warn('Supabase contact submission note:', sbErr);
     }
 
+    // Send email alert via SMTP if enabled
+    try {
+      const { sendContactNotificationEmail } = await import('@/lib/email');
+      sendContactNotificationEmail({
+        name,
+        email,
+        subject,
+        message,
+      }).catch((mailErr) => {
+        console.error('SMTP contact notification error:', mailErr);
+      });
+    } catch (e) {
+      console.warn('Failed to dispatch contact notification email:', e);
+    }
+
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: 'Invalid request.' }, { status: 400 });

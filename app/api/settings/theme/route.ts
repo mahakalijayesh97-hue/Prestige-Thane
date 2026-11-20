@@ -82,6 +82,17 @@ export async function GET() {
                   status: 'Online',
                 },
               ],
+
+        // Maintenance Mode & Downtime Settings
+        maintenance_mode: Boolean(doc?.maintenance_mode),
+        maintenance_title: doc?.maintenance_title || 'Website Under Scheduled Maintenance',
+        maintenance_message:
+          doc?.maintenance_message ||
+          'We are currently performing scheduled maintenance and performance upgrades. We will be back online shortly.',
+        maintenance_until: doc?.maintenance_until || '',
+        maintenance_show_timer: doc?.maintenance_show_timer !== false,
+        maintenance_support_phone: doc?.maintenance_support_phone || '+91 90222 22448',
+        maintenance_whatsapp: doc?.maintenance_whatsapp || '919022222448',
       },
       { headers: NO_CACHE_HEADERS }
     );
@@ -141,6 +152,14 @@ export async function GET() {
             status: 'Online',
           },
         ],
+        maintenance_mode: false,
+        maintenance_title: 'Website Under Scheduled Maintenance',
+        maintenance_message:
+          'We are currently performing scheduled maintenance and performance upgrades. We will be back online shortly.',
+        maintenance_until: '',
+        maintenance_show_timer: true,
+        maintenance_support_phone: '+91 90222 22448',
+        maintenance_whatsapp: '919022222448',
       },
       { headers: NO_CACHE_HEADERS }
     );
@@ -211,6 +230,15 @@ export async function POST(req: NextRequest) {
         status: String(item.status || 'Online').trim(),
       }));
     }
+
+    // Maintenance Mode & Downtime fields
+    if (body.maintenance_mode !== undefined) payload.maintenance_mode = Boolean(body.maintenance_mode);
+    if (body.maintenance_title !== undefined) payload.maintenance_title = String(body.maintenance_title).trim();
+    if (body.maintenance_message !== undefined) payload.maintenance_message = String(body.maintenance_message).trim();
+    if (body.maintenance_until !== undefined) payload.maintenance_until = String(body.maintenance_until).trim();
+    if (body.maintenance_show_timer !== undefined) payload.maintenance_show_timer = Boolean(body.maintenance_show_timer);
+    if (body.maintenance_support_phone !== undefined) payload.maintenance_support_phone = String(body.maintenance_support_phone).trim();
+    if (body.maintenance_whatsapp !== undefined) payload.maintenance_whatsapp = String(body.maintenance_whatsapp).replace(/\D/g, '').trim();
 
     const updated = await ThemeSetting.findOneAndUpdate(
       {},

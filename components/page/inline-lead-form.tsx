@@ -182,6 +182,7 @@ export function InlineLeadForm({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          form_slug: form?.slug || targetIdentifier,
           name: nameValue,
           phone: phoneClean,
           email: emailValue,

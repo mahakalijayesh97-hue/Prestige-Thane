@@ -55,6 +55,15 @@ export interface IThemeSetting extends Document {
   advisor_chat_prefill: string;
   advisor_chat_advisors: IAdvisorItem[];
 
+  // Maintenance Mode & Downtime Schedule Settings
+  maintenance_mode: boolean;
+  maintenance_title: string;
+  maintenance_message: string;
+  maintenance_until: string;
+  maintenance_show_timer: boolean;
+  maintenance_support_phone: string;
+  maintenance_whatsapp: string;
+
   // SEO & AI Crawler Files
   robots_txt_content: string;
   llms_txt_content: string;
@@ -138,6 +147,19 @@ const ThemeSettingSchema = new Schema<IThemeSetting>(
       ],
       default: [],
     },
+
+    // Maintenance Mode & Downtime Settings
+    maintenance_mode: { type: Boolean, default: false },
+    maintenance_title: { type: String, default: 'Website Under Scheduled Maintenance' },
+    maintenance_message: {
+      type: String,
+      default:
+        'We are currently performing scheduled maintenance and performance upgrades. We will be back online shortly.',
+    },
+    maintenance_until: { type: String, default: '' },
+    maintenance_show_timer: { type: Boolean, default: true },
+    maintenance_support_phone: { type: String, default: '+91 90222 22448' },
+    maintenance_whatsapp: { type: String, default: '919022222448' },
 
     // SEO & AI Crawler Files
     robots_txt_content: {

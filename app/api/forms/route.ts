@@ -56,6 +56,14 @@ export async function POST(req: NextRequest) {
       partner_name: body.partner_name || 'First Team',
       disclaimer: body.disclaimer || '🔒 100% Privacy Protected • Zero spam • Official pre-launch project updates only',
       fields: Array.isArray(body.fields) ? body.fields : [],
+      notify_admin: body.notify_admin !== false,
+      admin_notification_email: body.admin_notification_email || '',
+      admin_email_subject: body.admin_email_subject || '',
+      auto_reply_user: Boolean(body.auto_reply_user),
+      user_email_subject: body.user_email_subject || 'Thank you for your enquiry - Prestige Thane',
+      user_email_message:
+        body.user_email_message ||
+        'Thank you for reaching out to us. We have received your request and our project specialist will get in touch with you shortly with full project details.',
     });
 
     return NextResponse.json({ form: created }, { status: 201, headers: NO_CACHE_HEADERS });

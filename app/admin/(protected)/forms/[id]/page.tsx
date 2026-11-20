@@ -29,6 +29,9 @@ import {
   HelpCircle,
   MessageCircle,
   CalendarCheck,
+  Mail,
+  Send,
+  Bell,
 } from 'lucide-react';
 import { IFormField } from '@/lib/models/Form';
 
@@ -44,6 +47,12 @@ interface FormDataState {
   partner_name: string;
   disclaimer: string;
   fields: IFormField[];
+  notify_admin?: boolean;
+  admin_notification_email?: string;
+  admin_email_subject?: string;
+  auto_reply_user?: boolean;
+  user_email_subject?: string;
+  user_email_message?: string;
 }
 
 const FIELD_TYPES = [
@@ -61,7 +70,7 @@ export default function FormEditorPage({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savedNotice, setSavedNotice] = useState(false);
-  const [activeTab, setActiveTab] = useState<'fields' | 'settings' | 'preview'>('fields');
+  const [activeTab, setActiveTab] = useState<'fields' | 'settings' | 'emails' | 'preview'>('fields');
 
   useEffect(() => {
     loadForm();
@@ -72,7 +81,18 @@ export default function FormEditorPage({ params }: { params: { id: string } }) {
       const res = await fetch(`/api/forms/${params.id}`, { cache: 'no-store' });
       if (res.ok) {
         const json = await res.json();
-        setForm(json.form);
+        const f = json.form;
+        setForm({
+          ...f,
+          notify_admin: f.notify_admin !== false,
+          admin_notification_email: f.admin_notification_email || '',
+          admin_email_subject: f.admin_email_subject || '',
+          auto_reply_user: Boolean(f.auto_reply_user),
+          user_email_subject: f.user_email_subject || 'Thank you for your enquiry - Prestige Thane',
+          user_email_message:
+            f.user_email_message ||
+            'Thank you for reaching out to us. We have received your request and our project specialist will get in touch with you shortly with full project details.',
+        });
       }
     } catch (err) {
       console.error('Error loading form:', err);
@@ -292,6 +312,17 @@ export default function FormEditorPage({ params }: { params: { id: string } }) {
           }`}
         >
           <Settings className="h-4 w-4" /> Modal Texts &amp; WhatsApp Actions
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('emails')}
+          className={`flex items-center gap-2 border-b-2 px-4 py-2.5 text-xs font-bold transition ${
+            activeTab === 'emails'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Mail className="h-4 w-4" /> Email Alerts &amp; Auto-Reply
         </button>
         <button
           type="button"
@@ -590,7 +621,147 @@ export default function FormEditorPage({ params }: { params: { id: string } }) {
         </Card>
       )}
 
-      {/* TAB 3: Live Preview */}
+      {/* TAB 3: Email Alerts & User Auto-Reply */}
+      {activeTab === 'emails' && (
+        <div className="space-y-6">
+          {/* Admin Notification Card */}
+          <Card className="p-6 border border-border/80 bg-card rounded-2xl shadow-xs space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-border">
+              <div className="flex items-center gap-2.5">
+                <div className="h-8 w-8 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-600">
+                  <Bell className="h-4 w-4" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-foreground">Admin Lead Notification</h4>
+                  <p className="text-xs text-muted-foreground">
+                    Receive instant email notifications whenever a customer submits this specific form.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="notify-admin-switch" className="text-xs font-semibold cursor-pointer">
+                  Notify Admin
+                </Label>
+                <Switch
+                  id="notify-admin-switch"
+                  checked={form.notify_admin !== false}
+                  onCheckedChange={(checked) => setForm({ ...form, notify_admin: checked })}
+                />
+              </div>
+            </div>
+
+            {form.notify_admin !== false && (
+              <div className="space-y-4 pt-1">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold">Custom Admin Notification Email(s)</Label>
+                  <Input
+                    value={form.admin_notification_email || ''}
+                    onChange={(e) => setForm({ ...form, admin_notification_email: e.target.value })}
+                    placeholder="sales@prestige-thane.com, director@prestige-thane.com"
+                    className="text-sm"
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Leave empty to use the default recipient configured under <strong>SMTP Email Configuration</strong>. You can enter multiple emails separated by commas.
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold">Custom Admin Email Subject</Label>
+                  <Input
+                    value={form.admin_email_subject || ''}
+                    onChange={(e) => setForm({ ...form, admin_email_subject: e.target.value })}
+                    placeholder={`🚨 New Lead: [Name] (${form.title})`}
+                    className="text-sm"
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Optional custom subject line for incoming admin alert emails.
+                  </p>
+                </div>
+              </div>
+            )}
+          </Card>
+
+          {/* User Auto-Reply Card */}
+          <Card className="p-6 border border-border/80 bg-card rounded-2xl shadow-xs space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-border">
+              <div className="flex items-center gap-2.5">
+                <div className="h-8 w-8 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600">
+                  <Send className="h-4 w-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-sm font-bold text-foreground">User / Submitter Confirmation Email</h4>
+                    <Badge variant={form.auto_reply_user ? 'default' : 'secondary'} className={form.auto_reply_user ? 'bg-emerald-600' : ''}>
+                      {form.auto_reply_user ? 'Active' : 'Disabled'}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Send an automatic branded thank-you / confirmation email to the homebuyer upon form submission.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="auto-reply-switch" className="text-xs font-semibold cursor-pointer">
+                  Send Auto-Reply
+                </Label>
+                <Switch
+                  id="auto-reply-switch"
+                  checked={Boolean(form.auto_reply_user)}
+                  onCheckedChange={(checked) => setForm({ ...form, auto_reply_user: checked })}
+                />
+              </div>
+            </div>
+
+            {form.auto_reply_user && (
+              <div className="space-y-4 pt-1">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold">User Email Subject Line</Label>
+                  <Input
+                    value={form.user_email_subject || ''}
+                    onChange={(e) => setForm({ ...form, user_email_subject: e.target.value })}
+                    placeholder="Thank you for registering your interest in Prestige Thane"
+                    className="text-sm"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold">Confirmation Message Body</Label>
+                  <textarea
+                    rows={4}
+                    value={form.user_email_message || ''}
+                    onChange={(e) => setForm({ ...form, user_email_message: e.target.value })}
+                    placeholder="Thank you for reaching out to us. We have received your request and our project specialist will get in touch with you shortly with full project details."
+                    className="w-full px-3 py-2 rounded-xl border border-input bg-background text-sm leading-relaxed focus:outline-hidden focus:ring-2 focus:ring-primary/20"
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    This message will be rendered inside the official Prestige Thane responsive email template sent to the user.
+                  </p>
+                </div>
+
+                {/* Email Preview */}
+                <div className="pt-2">
+                  <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block mb-2">
+                    Customer Email Preview
+                  </Label>
+                  <div className="p-4 rounded-xl border border-border bg-slate-50 dark:bg-slate-900/60 max-w-md space-y-2">
+                    <div className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+                      <strong>Subject:</strong> {form.user_email_subject || 'Thank you for your enquiry - Prestige Thane'}
+                    </div>
+                    <div className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
+                      Dear Valued Homebuyer,
+                      {'\n\n'}
+                      {form.user_email_message ||
+                        'Thank you for reaching out to us. We have received your request and our project specialist will get in touch with you shortly with full project details.'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </Card>
+        </div>
+      )}
+
+      {/* TAB 4: Live Preview */}
       {activeTab === 'preview' && (
         <div className="flex justify-center p-4 bg-slate-900/40 rounded-2xl border border-border">
           <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">

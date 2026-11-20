@@ -28,6 +28,13 @@ export interface IForm extends Document {
   partner_name: string;
   disclaimer: string;
   fields: IFormField[];
+  // Email Notifications Settings
+  notify_admin: boolean;
+  admin_notification_email?: string;
+  admin_email_subject?: string;
+  auto_reply_user: boolean;
+  user_email_subject?: string;
+  user_email_message?: string;
   created_at: Date;
   updated_at: Date;
 }
@@ -71,6 +78,16 @@ const FormSchema = new Schema<IForm>(
       default: '🔒 100% Privacy Protected • Zero spam • Official pre-launch project updates only',
     },
     fields: { type: [FormFieldSchema], default: [] },
+    notify_admin: { type: Boolean, default: true },
+    admin_notification_email: { type: String, default: '' },
+    admin_email_subject: { type: String, default: '' },
+    auto_reply_user: { type: Boolean, default: false },
+    user_email_subject: { type: String, default: 'Thank you for your enquiry - Prestige Thane' },
+    user_email_message: {
+      type: String,
+      default:
+        'Thank you for reaching out to us. We have received your request and our project specialist will get in touch with you shortly with full project details.',
+    },
   },
   {
     timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
@@ -91,6 +108,13 @@ export const DEFAULT_EARLY_ACCESS_FORM = {
   whatsapp_number: '919022222448',
   partner_name: 'First Team',
   disclaimer: '🔒 100% Privacy Protected • Zero spam • Official pre-launch project updates only',
+  notify_admin: true,
+  admin_notification_email: '',
+  admin_email_subject: '',
+  auto_reply_user: true,
+  user_email_subject: 'Thank you for registering your interest in Prestige Thane',
+  user_email_message:
+    'Thank you for your interest! We have received your details. Our Prestige project specialist will connect with you shortly with the official brochure, price sheet, and floor plans.',
   fields: [
     {
       id: 'field_phone',

@@ -8,6 +8,7 @@ import { EarlyAccessModalContainer } from '@/components/home/early-access-modal'
 import { PropertyAdvisorChat } from '@/components/layout/property-advisor-chat';
 import { ExternalScriptsLoader } from '@/components/layout/external-scripts';
 import { GlobalThemeProvider } from '@/components/layout/global-theme-provider';
+import { MaintenanceScreen } from '@/components/layout/maintenance-screen';
 import { getGlobalThemeSettings } from '@/lib/data';
 import { parseCdnTags } from '@/lib/cdn-tags';
 
@@ -24,6 +25,20 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
     .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
     .replace(/<!--[\s\S]*?-->/gi, '')
     .trim();
+
+  // If website is put into scheduled downtime / maintenance mode
+  if (theme.maintenance_mode) {
+    return (
+      <MaintenanceScreen
+        title={theme.maintenance_title}
+        message={theme.maintenance_message}
+        until={theme.maintenance_until}
+        showTimer={theme.maintenance_show_timer !== false}
+        phone={theme.maintenance_support_phone}
+        whatsapp={theme.maintenance_whatsapp}
+      />
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col">

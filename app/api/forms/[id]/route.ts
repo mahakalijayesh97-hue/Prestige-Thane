@@ -69,6 +69,22 @@ export async function PUT(
           ...(body.partner_name ? { partner_name: body.partner_name } : {}),
           ...(body.disclaimer !== undefined ? { disclaimer: body.disclaimer } : {}),
           ...(Array.isArray(body.fields) ? { fields: body.fields } : {}),
+          ...(body.notify_admin !== undefined ? { notify_admin: Boolean(body.notify_admin) } : {}),
+          ...(body.admin_notification_email !== undefined
+            ? { admin_notification_email: body.admin_notification_email.trim() }
+            : {}),
+          ...(body.admin_email_subject !== undefined
+            ? { admin_email_subject: body.admin_email_subject.trim() }
+            : {}),
+          ...(body.auto_reply_user !== undefined
+            ? { auto_reply_user: Boolean(body.auto_reply_user) }
+            : {}),
+          ...(body.user_email_subject !== undefined
+            ? { user_email_subject: body.user_email_subject.trim() }
+            : {}),
+          ...(body.user_email_message !== undefined
+            ? { user_email_message: body.user_email_message }
+            : {}),
           updated_at: new Date(),
         },
       },

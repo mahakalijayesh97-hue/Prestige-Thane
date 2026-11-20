@@ -280,6 +280,13 @@ export interface GlobalThemeSettings {
   llms_txt_content?: string;
   sitemap_custom_urls?: string;
   sitemap_auto_sync?: boolean;
+  maintenance_mode?: boolean;
+  maintenance_title?: string;
+  maintenance_message?: string;
+  maintenance_until?: string;
+  maintenance_show_timer?: boolean;
+  maintenance_support_phone?: string;
+  maintenance_whatsapp?: string;
   advisor_chat_advisors?: Array<{
     id: string;
     name: string;
@@ -333,6 +340,15 @@ export async function getGlobalThemeSettings(): Promise<GlobalThemeSettings> {
         llms_txt_content: doc.llms_txt_content || '',
         sitemap_custom_urls: doc.sitemap_custom_urls || '',
         sitemap_auto_sync: doc.sitemap_auto_sync !== false,
+        maintenance_mode: Boolean(doc.maintenance_mode),
+        maintenance_title: doc.maintenance_title || 'Website Under Scheduled Maintenance',
+        maintenance_message:
+          doc.maintenance_message ||
+          'We are currently performing scheduled maintenance and performance upgrades. We will be back online shortly.',
+        maintenance_until: doc.maintenance_until || '',
+        maintenance_show_timer: doc.maintenance_show_timer !== false,
+        maintenance_support_phone: doc.maintenance_support_phone || '+91 90222 22448',
+        maintenance_whatsapp: doc.maintenance_whatsapp || '919022222448',
         advisor_chat_advisors:
           Array.isArray(doc.advisor_chat_advisors) && doc.advisor_chat_advisors.length > 0
             ? doc.advisor_chat_advisors

@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import {
   FormInput,
   Plus,
@@ -116,6 +117,8 @@ export default function FormsAdminPage() {
   const [newTitle, setNewTitle] = useState('');
   const [newSlug, setNewSlug] = useState('');
   const [newDescription, setNewDescription] = useState('');
+  const [newNotifyAdmin, setNewNotifyAdmin] = useState(true);
+  const [newAutoReplyUser, setNewAutoReplyUser] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<'all' | 'active' | 'disabled'>('all');
@@ -255,6 +258,8 @@ export default function FormsAdminPage() {
           slug: newSlug.trim().toLowerCase().replace(/\s+/g, '-'),
           description: newDescription.trim() || 'Official project enquiry form.',
           fields: defaultFields,
+          notify_admin: newNotifyAdmin,
+          auto_reply_user: newAutoReplyUser,
         }),
       });
 
@@ -993,6 +998,35 @@ export default function FormsAdminPage() {
                   onChange={(e) => setNewDescription(e.target.value)}
                   className="rounded-xl h-10 text-xs"
                 />
+              </div>
+
+              {/* Email Notifications Configuration */}
+              <div className="p-3 rounded-xl border border-border/80 bg-muted/30 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="font-bold text-xs block text-foreground">Admin Email Alert</span>
+                    <span className="text-[10px] text-muted-foreground block">
+                      Send lead alert email to admin on submission
+                    </span>
+                  </div>
+                  <Switch
+                    checked={newNotifyAdmin}
+                    onCheckedChange={(checked) => setNewNotifyAdmin(checked)}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between pt-1 border-t border-border/50">
+                  <div>
+                    <span className="font-bold text-xs block text-foreground">Customer Auto-Reply Email</span>
+                    <span className="text-[10px] text-muted-foreground block">
+                      Send instant confirmation / thank you email to submitter
+                    </span>
+                  </div>
+                  <Switch
+                    checked={newAutoReplyUser}
+                    onCheckedChange={(checked) => setNewAutoReplyUser(checked)}
+                  />
+                </div>
               </div>
 
               {selectedTemplate && (

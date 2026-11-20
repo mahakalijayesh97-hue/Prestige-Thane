@@ -99,6 +99,56 @@ export async function POST(req: NextRequest) {
       // background sync fallback
     }
 
+    // Send email alert via SMTP if enabled
+    try {
+      const { sendLeadNotificationEmail, sendUserAutoReplyEmail } = await import('@/lib/email');
+
+      // Check if this lead came from a specific form with custom email settings
+      let formConfig: any = null;
+      try {
+        const FormModel = (await import('@/lib/models/Form')).default;
+        const targetSlug = body.form_slug || body.form_id;
+        if (targetSlug) {
+          formConfig = await FormModel.findOne({
+            $or: [{ slug: targetSlug }, { _id: targetSlug }],
+          }).lean();
+        }
+      } catch {}
+
+      // 1. Send Admin Notification (unless explicitly disabled on this form)
+      if (!formConfig || formConfig.notify_admin !== false) {
+        sendLeadNotificationEmail({
+          name: lead.name,
+          phone: lead.phone,
+          email: lead.email,
+          configuration: lead.configuration,
+          intent: lead.intent,
+          source: lead.source,
+          notes: lead.notes,
+          customRecipient: formConfig?.admin_notification_email,
+          customSubject: formConfig?.admin_email_subject,
+          formTitle: formConfig?.title,
+        }).catch((mailErr) => {
+          console.error('SMTP lead notification error:', mailErr);
+        });
+      }
+
+      // 2. Send User Auto-Reply / Confirmation Email (if enabled on this form)
+      if (formConfig?.auto_reply_user && lead.email) {
+        sendUserAutoReplyEmail({
+          to: lead.email,
+          name: lead.name,
+          subject: formConfig.user_email_subject,
+          message: formConfig.user_email_message,
+          configuration: lead.configuration,
+        }).catch((mailErr) => {
+          console.error('SMTP user auto-reply error:', mailErr);
+        });
+      }
+    } catch (e) {
+      console.warn('Failed to dispatch lead notification email:', e);
+    }
+
     return NextResponse.json({ ok: true, lead });
   } catch (error: unknown) {
     console.error('Lead submission error:', error);

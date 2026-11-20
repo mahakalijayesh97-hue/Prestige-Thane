@@ -39,6 +39,8 @@ import {
   ArrowDown,
   Code2,
   ExternalLink,
+  Send,
+  FileQuestion,
 } from 'lucide-react';
 
 const nav = [
@@ -50,6 +52,8 @@ const nav = [
   { href: '/admin/footer', label: 'Footer', icon: FooterIcon },
   { href: '/admin/media', label: 'Media', icon: ImageIcon },
   { href: '/admin/contact', label: 'Messages', icon: Mail },
+  { href: '/admin/smtp', label: 'SMTP Email Configuration', icon: Send },
+  { href: '/admin/error-page', label: '404 Error Page', icon: FileQuestion },
   { href: '/admin/custom-code', label: 'Custom Code & CDN', icon: Code2 },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];
@@ -60,6 +64,8 @@ const API_PREFETCH_MAP: Record<string, string[]> = {
   '/admin/nav': ['/api/nav', '/api/settings/theme'],
   '/admin/forms': ['/api/forms'],
   '/admin/media': ['/api/media'],
+  '/admin/smtp': ['/api/settings/smtp'],
+  '/admin/error-page': ['/api/settings/error-page'],
   '/admin/custom-code': ['/api/settings/theme'],
   '/admin/settings': ['/api/settings/theme'],
   '/admin/footer': ['/api/footer/custom', '/api/footer/columns', '/api/footer/links'],

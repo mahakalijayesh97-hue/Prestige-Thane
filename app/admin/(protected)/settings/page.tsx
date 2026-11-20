@@ -43,6 +43,9 @@ import {
   Bot,
   SlidersHorizontal,
   Save,
+  Clock,
+  Wrench,
+  ShieldAlert,
 } from 'lucide-react';
 
 interface Settings {
@@ -144,8 +147,19 @@ export default function AdminSettingsPage() {
   const [subSiteNameColor, setSubSiteNameColor] = useState('#d97706');
 
   // Active Category Tab Filter
-  type SettingsTab = 'all' | 'branding' | 'contact' | 'seo' | 'project' | 'chat';
+  type SettingsTab = 'all' | 'branding' | 'contact' | 'maintenance' | 'seo' | 'project' | 'chat';
   const [activeTab, setActiveTab] = useState<SettingsTab>('all');
+
+  // Maintenance Mode & Scheduled Downtime States
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [maintenanceTitle, setMaintenanceTitle] = useState('Website Under Scheduled Maintenance');
+  const [maintenanceMessage, setMaintenanceMessage] = useState(
+    'We are currently performing scheduled maintenance and performance upgrades. We will be back online shortly.'
+  );
+  const [maintenanceUntil, setMaintenanceUntil] = useState('');
+  const [maintenanceShowTimer, setMaintenanceShowTimer] = useState(true);
+  const [maintenancePhone, setMaintenancePhone] = useState('+91 90222 22448');
+  const [maintenanceWhatsapp, setMaintenanceWhatsapp] = useState('919022222448');
 
   // Prestige Project Showcase & Launch States
   const [projectTitle, setProjectTitle] = useState('Prestige Thane');
@@ -303,6 +317,15 @@ export default function AdminSettingsPage() {
         if (Array.isArray(data.advisor_chat_advisors) && data.advisor_chat_advisors.length > 0) {
           setAdvisors(data.advisor_chat_advisors);
         }
+
+        // Maintenance Mode & Downtime Settings
+        if (data.maintenance_mode !== undefined) setMaintenanceMode(Boolean(data.maintenance_mode));
+        if (data.maintenance_title !== undefined) setMaintenanceTitle(data.maintenance_title);
+        if (data.maintenance_message !== undefined) setMaintenanceMessage(data.maintenance_message);
+        if (data.maintenance_until !== undefined) setMaintenanceUntil(data.maintenance_until);
+        if (data.maintenance_show_timer !== undefined) setMaintenanceShowTimer(data.maintenance_show_timer !== false);
+        if (data.maintenance_support_phone !== undefined) setMaintenancePhone(data.maintenance_support_phone);
+        if (data.maintenance_whatsapp !== undefined) setMaintenanceWhatsapp(data.maintenance_whatsapp);
       }
     } catch (err) {
       console.error('Failed to load theme settings:', err);
@@ -373,6 +396,13 @@ export default function AdminSettingsPage() {
           advisor_chat_whatsapp: advisorChatWhatsapp,
           advisor_chat_prefill: advisorChatPrefill,
           advisor_chat_advisors: advisors,
+          maintenance_mode: maintenanceMode,
+          maintenance_title: maintenanceTitle,
+          maintenance_message: maintenanceMessage,
+          maintenance_until: maintenanceUntil,
+          maintenance_show_timer: maintenanceShowTimer,
+          maintenance_support_phone: maintenancePhone,
+          maintenance_whatsapp: maintenanceWhatsapp,
         }),
       });
 
@@ -717,6 +747,7 @@ export default function AdminSettingsPage() {
             { id: 'all', label: 'All Settings', icon: SlidersHorizontal },
             { id: 'branding', label: 'Branding & Theme', icon: Palette },
             { id: 'contact', label: 'Contact & Social', icon: Phone },
+            { id: 'maintenance', label: 'Maintenance & Downtime', icon: Clock },
             { id: 'seo', label: 'SEO & AI Crawlers', icon: Bot },
             { id: 'project', label: 'Project Showcase', icon: Sparkles },
             { id: 'chat', label: 'Live Chat Widget', icon: MessageSquare },
@@ -1319,6 +1350,174 @@ export default function AdminSettingsPage() {
           )}
         </div>
       </div>
+      )}
+
+      {/* ─── SCHEDULED MAINTENANCE & DOWNTIME MODE ─── */}
+      {(activeTab === 'all' || activeTab === 'maintenance') && (
+        <div className="rounded-2xl border border-border/80 bg-card p-6 shadow-xs space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-border/80 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                <Clock className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base font-bold text-foreground">
+                    Scheduled Maintenance &amp; Downtime Mode
+                  </h2>
+                  <Badge
+                    variant={maintenanceMode ? 'destructive' : 'outline'}
+                    className={
+                      maintenanceMode
+                        ? 'bg-amber-600 hover:bg-amber-600 text-white font-bold'
+                        : 'text-emerald-600 border-emerald-500/30 bg-emerald-500/10'
+                    }
+                  >
+                    {maintenanceMode ? '● Website Offline' : '● Website Online & Live'}
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Put the public website in maintenance mode, schedule downtime hours, and display a live countdown timer until the site is back online.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2.5 bg-muted/40 p-2 rounded-xl border border-border/60">
+              <Label htmlFor="maint-mode-switch" className="text-xs font-bold cursor-pointer">
+                {maintenanceMode ? 'Maintenance Mode Active' : 'Enable Maintenance'}
+              </Label>
+              <Switch
+                id="maint-mode-switch"
+                checked={maintenanceMode}
+                onCheckedChange={(checked) => setMaintenanceMode(checked)}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Downtime Headline / Notice Title</Label>
+                <input
+                  type="text"
+                  value={maintenanceTitle}
+                  onChange={(e) => setMaintenanceTitle(e.target.value)}
+                  placeholder="Website Under Scheduled Maintenance"
+                  className="w-full px-3 py-2 rounded-xl border border-input bg-background text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-semibold">Expected Back Online (Date &amp; Time)</Label>
+                  <span className="text-[10px] text-muted-foreground font-mono">
+                    {maintenanceUntil ? new Date(maintenanceUntil).toLocaleString('en-IN') : 'Not scheduled'}
+                  </span>
+                </div>
+                <input
+                  type="datetime-local"
+                  value={maintenanceUntil}
+                  onChange={(e) => setMaintenanceUntil(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-input bg-background text-sm font-mono focus:outline-hidden focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+            </div>
+
+            {/* Quick Time Setter Presets */}
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <span className="text-[11px] font-semibold text-muted-foreground">Quick Schedules:</span>
+              {[
+                { label: '+30 Minutes', mins: 30 },
+                { label: '+1 Hour', mins: 60 },
+                { label: '+2 Hours', mins: 120 },
+                { label: '+4 Hours', mins: 240 },
+                { label: '+12 Hours', mins: 720 },
+              ].map((preset) => (
+                <button
+                  key={preset.label}
+                  type="button"
+                  onClick={() => {
+                    const target = new Date(Date.now() + preset.mins * 60 * 1000);
+                    // Format to YYYY-MM-DDTHH:mm for datetime-local
+                    const offset = target.getTimezoneOffset() * 60000;
+                    const localISOTime = new Date(target.getTime() - offset).toISOString().slice(0, 16);
+                    setMaintenanceUntil(localISOTime);
+                  }}
+                  className="px-2.5 py-1 rounded-lg text-[11px] font-medium border border-border bg-muted/40 hover:bg-muted text-foreground transition cursor-pointer"
+                >
+                  {preset.label}
+                </button>
+              ))}
+              {maintenanceUntil && (
+                <button
+                  type="button"
+                  onClick={() => setMaintenanceUntil('')}
+                  className="px-2 py-1 rounded-lg text-[10px] font-semibold text-destructive hover:bg-destructive/10 transition cursor-pointer"
+                >
+                  Clear Time
+                </button>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Downtime Explanation / Visitor Message</Label>
+              <textarea
+                rows={3}
+                value={maintenanceMessage}
+                onChange={(e) => setMaintenanceMessage(e.target.value)}
+                placeholder="We are currently performing scheduled maintenance and performance upgrades. We will be back online shortly."
+                className="w-full px-3 py-2 rounded-xl border border-input bg-background text-sm leading-relaxed focus:outline-hidden focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/40 border border-border/60">
+                <Switch
+                  id="maint-timer-switch"
+                  checked={maintenanceShowTimer}
+                  onCheckedChange={(checked) => setMaintenanceShowTimer(checked)}
+                />
+                <div>
+                  <Label htmlFor="maint-timer-switch" className="text-xs font-semibold cursor-pointer block">
+                    Live Countdown Clock
+                  </Label>
+                  <span className="text-[10px] text-muted-foreground block">
+                    Displays real-time countdown to target time.
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Emergency Call Helpline</Label>
+                <input
+                  type="text"
+                  value={maintenancePhone}
+                  onChange={(e) => setMaintenancePhone(e.target.value)}
+                  placeholder="+91 90222 22448"
+                  className="w-full px-3 py-2 rounded-xl border border-input bg-background text-sm focus:outline-hidden focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Emergency WhatsApp Number</Label>
+                <input
+                  type="text"
+                  value={maintenanceWhatsapp}
+                  onChange={(e) => setMaintenanceWhatsapp(e.target.value.replace(/\D/g, ''))}
+                  placeholder="919022222448"
+                  className="w-full px-3 py-2 rounded-xl border border-input bg-background text-sm font-mono focus:outline-hidden focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-blue-700 dark:text-blue-300 flex items-start gap-2.5">
+              <ShieldAlert className="h-4 w-4 shrink-0 mt-0.5 text-blue-600" />
+              <div className="leading-relaxed text-[11px]">
+                <strong>Admin Safe Access:</strong> Enabling Maintenance Mode blocks public visitors and shows the countdown schedule. Your Admin Console (<code>/admin</code>) remains accessible at all times so you can work and deactivate maintenance mode when ready.
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ─── SEARCH ENGINES & AI CRAWLER MANAGEMENT (robots.txt, llms.txt, sitemap.xml) ─── */}
